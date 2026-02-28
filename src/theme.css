@@ -121,7 +121,7 @@ body::after {
 }
 
 /* ============================= */
-/* BACK BUTTON (TOP RIGHT) */
+/* BACK BUTTON */
 /* ============================= */
 
 .back-boot-btn {
@@ -135,7 +135,6 @@ body::after {
   letter-spacing: 2px;
   text-transform: uppercase;
 
-  /* RED STYLE BUTTON */
   color: #ff003c;
   background: rgba(20, 0, 0, 0.9);
   border: 1px solid rgba(255, 0, 0, 0.5);
@@ -194,19 +193,6 @@ h1 {
     0 0 50px rgba(160,0,255,0.6);
 }
 
-.terminator-title {
-  font-size: 36px;
-  color: #ff003c;
-  letter-spacing: 4px;
-
-  text-shadow:
-    0 0 5px #5076f17b,
-    0 0 10px #5076f17b,
-    0 0 20px #5076f17b,
-    0 0 60px rgba(255,0,0,1),
-    0 0 90px rgba(160,0,255,0.8);
-}
-
 h3 {
   color: #ff4d6d;
   text-shadow:
@@ -214,17 +200,7 @@ h3 {
 }
 
 /* ============================= */
-/* CARD GRID */
-/* ============================= */
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 30px;
-}
-
-/* ============================= */
-/* CARDS */
+/* CARD */
 /* ============================= */
 
 .card {
@@ -350,23 +326,20 @@ h3 {
 }
 
 .win98-btn {
-  /* Core layout and appearance */
-  height: 23px; /* Standard height */
-  padding: 0 12px; /* Standard horizontal padding */
-  font-family: "MS Sans Serif", Tahoma, sans-serif; /* Default system font */
+  height: 23px;
+  padding: 0 12px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
   font-size: 12px;
-  background-color: #c0c0c0; /* Standard gray background */
+  background-color: #c0c0c0;
   color: black;
-  border: none; /* Remove default border */
+  border: none;
 
-  /* The magic: creating the 3D effect with box-shadows */
   box-shadow:
-    inset -1px -1px #5076f17b, /* Inner shadow bottom/right */
-    inset 1px 1px #8a00ff,      /* Inner highlight top/left */
-    -1px -1px #000,          /* Outer shadow bottom/right (simulated) */
-    1px 1px #fff;            /* Outer highlight top/left (simulated) */
+    inset -1px -1px #5076f17b,
+    inset 1px 1px #8a00ff,
+    -1px -1px #000,
+    1px 1px #fff;
 }
-
 
 @keyframes loader {
   0%, 100% { transform: scaleX(0.6); }
@@ -376,4 +349,66 @@ h3 {
 @keyframes flicker {
   0% { opacity: 0.85; }
   100% { opacity: 1; }
+}
+
+/* ============================= */
+/* SETTINGS INPUTS (SMALL + MORE GREY WHEN DISABLED) */
+/* ============================= */
+
+.input-group {
+  margin-bottom: 14px;
+}
+
+/* small width */
+.input-field {
+  width: 200px;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid #666;
+  border-radius: 3px;
+  background-color: #e0e0e0;
+  transition: 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* white on focus */
+.input-field:focus {
+  background-color: #ffffff;
+  outline: none;
+  border-color: #ff3c3c;
+}
+
+/* MORE GREY WHEN DISABLED (dark & clearly inactive) */
+.input-field:disabled {
+  background-color: #7a7a7a;
+  color: #555;
+}
+
+/* percent inside (like 35%) */
+.percent-input {
+  position: relative;
+  width: 200px;
+}
+
+.percent-input::after {
+  content: "%";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #555;
+  pointer-events: none;
+}
+
+/* space for % */
+.percent-input .input-field {
+  padding-right: 22px;
+}
+
+/* file input same style */
+input[type="file"].input-field {
+  width: 200px;
+  padding: 4px 6px;
+  font-size: 13px;
 }
