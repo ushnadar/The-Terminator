@@ -187,9 +187,9 @@ h1 {
   margin-bottom: 30px;
 
   text-shadow:
-    0 0 5px #fff,
-    0 0 10px #fff,
-    0 0 20px #fff,
+    0 0 5px #5076f17b,
+    0 0 10px #5076f17b,
+    0 0 20px #5076f17b,
     0 0 30px rgba(255,0,0,1),
     0 0 50px rgba(160,0,255,0.6);
 }
@@ -200,9 +200,9 @@ h1 {
   letter-spacing: 4px;
 
   text-shadow:
-    0 0 5px #fff,
-    0 0 15px #fff,
-    0 0 30px #fff,
+    0 0 5px #5076f17b,
+    0 0 10px #5076f17b,
+    0 0 20px #5076f17b,
     0 0 60px rgba(255,0,0,1),
     0 0 90px rgba(160,0,255,0.8);
 }
@@ -310,9 +310,9 @@ h3 {
   color: #ff003c;
 
   text-shadow:
-    0 0 5px #fff,
-    0 0 15px #fff,
-    0 0 30px #fff,
+   0 0 5px #5076f17b,
+    0 0 10px #5076f17b,
+    0 0 20px #5076f17b,
     0 0 60px rgba(255,0,0,1),
     0 0 100px rgba(160,0,255,0.8);
 
@@ -348,6 +348,25 @@ h3 {
 .boot-loader div:nth-child(3) {
   animation-delay: 0.4s;
 }
+
+.win98-btn {
+  /* Core layout and appearance */
+  height: 23px; /* Standard height */
+  padding: 0 12px; /* Standard horizontal padding */
+  font-family: "MS Sans Serif", Tahoma, sans-serif; /* Default system font */
+  font-size: 12px;
+  background-color: #c0c0c0; /* Standard gray background */
+  color: black;
+  border: none; /* Remove default border */
+
+  /* The magic: creating the 3D effect with box-shadows */
+  box-shadow:
+    inset -1px -1px #5076f17b, /* Inner shadow bottom/right */
+    inset 1px 1px #8a00ff,      /* Inner highlight top/left */
+    -1px -1px #000,          /* Outer shadow bottom/right (simulated) */
+    1px 1px #fff;            /* Outer highlight top/left (simulated) */
+}
+
 
 @keyframes loader {
   0%, 100% { transform: scaleX(0.6); }

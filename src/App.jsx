@@ -18,7 +18,7 @@ function Layout({ children }) {
       <Sidebar />
       <div className="content">
         <button
-          className="back-button"
+          className="win98-btn"
           onClick={() => window.location.href = "/"}
         >
           ⬅ Back to Boot
