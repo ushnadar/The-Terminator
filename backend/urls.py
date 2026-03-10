@@ -5,6 +5,7 @@ from .info import global_storage_info
 from .info import global_network_info 
 from .info import global_battery_info # ts be so redundant lmfao 
 # currently the ones above ONLY handle global stuff no per process yet 
+from .info import processes_info
 
 
 urlpatterns = [
@@ -12,5 +13,6 @@ urlpatterns = [
     path('api/memory-info/', global_memory_info.as_view()),
     path('api/storage-info/', global_storage_info.as_view()),   
     path('api/network-info/', global_network_info.as_view()),   
-    path('api/battery-info/', global_battery_info.as_view()),      
+    path('api/battery-info/', global_battery_info.as_view()), 
+    path('api/process-info/', processes_info.as_view())
 ]

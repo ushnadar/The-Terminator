@@ -22,18 +22,28 @@ class global_cpu_info(APIView,global_info):
         cores=psutil.cpu_count(logical=False)
         threads=psutil.cpu_count(logical=True)
         usage=psutil.cpu_percent(interval=1)
-        freq = psutil.cpu_freq()
-        freq_min =freq.min
-        freq_max= freq.max
-        freq_current = freq.current
+        usage_per_core=psutil.cpu_percent(interval=1,percpu=True)
+        freq = psutil.cpu_freq() 
+        
+        # freq_per_core= psutil.cpu_freq(percpu=True)
+        # cores_freq_list=[]
+        # for i in freq_per_core:
+        #     cores_freq_list.append(round(i.current/1000,2))
+       
+        freq_current = round(freq.current/1000,2)
         
         return { #the fact this doesnt go to the next line annoys me 
         "cores":cores,
         'threads':threads,
-        "usage":usage,
-        "freq":freq_current,  #current frequency 
-        "freq_max":freq_max,
-        "freq_min":freq_min
+        "total usage":usage, #total 
+        "per thread usage": usage_per_core,
+        "total freq":freq_current,  #current frequency 
+        
+        # "per thread freq":cores_freq_list,
+        # "ATTENTION": "ye per thread freq is broken so ig we wont be using it"
+        # "freq_max":freq_max, in ki zaroroat nahi hai frfrfrfr
+        # "freq_min":freq_min
+        
         }
     
     def get(self,request):
@@ -146,6 +156,56 @@ class global_battery_info(APIView,global_info):
     def get(self,request):
         info= self.get_info()
         return Response(info)
+    
 
 
-        
+class processes_info(APIView,global_info):
+    def get_info(self, n=5, sort_by='cpu'):
+
+        procs = []
+
+        # First call to initialize
+        for p in psutil.process_iter(['pid', 'name', 'memory_info']): #this stupid library requires 2 calls to get the actual cpu usage (insane)
+            p.cpu_percent() 
+
+        import time
+        time.sleep(0.5) # 2 calls woh bhi separated DA HELL
+
+        cpu_count = psutil.cpu_count()
+
+        for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info']):
+           
+            if p.info['name'] == 'System Idle Process': #fake process that shows unused cpu usage for some messed up reason 
+                continue
+            
+            if p.info['name'] == 'MemCompression': #memory compression ka program dat cant be killed
+                continue
+            
+            if p.info['pid'] == os.getpid(): #khud ko toh list mei nahi dalna na lol dont wanna flag ourselves as the resource hog we are lol RIGHT?
+                continue
+                
+            process_name=p.info['name']
+            process_cpu_usage=round(p.info['cpu_percent']/ cpu_count ,2) # lil bro returns by adding ALL THREAD's percentage so need to divide it by the count of threads
+            process_memory_usage= round(p.info['memory_info'].rss/(1024**2),2) #need mbs
+
+            procs.append({
+                'pid':   p.info['pid'], #is ke beghair browsers ke tabs mei confusion ho jana
+                'name':process_name,
+                'cpu':process_cpu_usage,
+                'mem': process_memory_usage,
+                # 'read':  read,
+                # 'write': write,
+            }
+            )
+
+        procs = sorted(procs, key=lambda x: x[sort_by], reverse=True)
+
+        return procs[:n]
+    
+    def get(self,request):
+        n= int(request.query_params.get('n',5)) #size of kitne programs chahiyen list mei
+        sort_by = request.query_params.get('sort_by','cpu') #key for sorting
+        info=self.get_info(n, sort_by)
+        return Response(info)
+
+
