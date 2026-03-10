@@ -7,6 +7,13 @@ import psutil
 import time
 import os
 
+
+processes_to_ignore=set()  #names of processes to ignore (built in for now baad mei ig user selected bhi add kerein gei)
+processes_to_ignore.add('System Idle Process')
+processes_to_ignore.add('MemCompression')
+processes_to_ignore.add('MsMpEng.exe')
+
+
 class global_info(ABC):
     @abstractmethod    
     def get_info(self): # will return the info as a dictionary 
@@ -175,12 +182,18 @@ class processes_info(APIView,global_info):
 
         for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info']):
            
-            if p.info['name'] == 'System Idle Process': #fake process that shows unused cpu usage for some messed up reason 
-                continue
+            # if p.info['name'] == 'System Idle Process': #fake process that shows unused cpu usage for some messed up reason 
+            #     continue
+             
+            # if p.info['name'] == 'MsMpEng.exe': #windows anti malware executable (built in anti virus ab is se to pangay nahi le sakte lol)
+            #     continue
+
+            # if p.info['name'] == 'MemCompression': #memory compression ka program dat cant be killed
+            #     continue
             
-            if p.info['name'] == 'MemCompression': #memory compression ka program dat cant be killed
+            if p.info['name'] in processes_to_ignore:
                 continue
-            
+
             if p.info['pid'] == os.getpid(): #khud ko toh list mei nahi dalna na lol dont wanna flag ourselves as the resource hog we are lol RIGHT?
                 continue
                 
