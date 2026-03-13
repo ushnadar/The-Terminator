@@ -72,9 +72,9 @@ function MainPage() {
           <h3>Network</h3>
           <p>
             Speed: {
-              network && Object.keys(network.connections).length > 0
-                ? Object.values(network.connections)[0] + " Mbps"
-                : "--"
+              network?.download_MBps !== undefined && network?.upload_MBps !== undefined
+              ? (network.download_MBps + network.upload_MBps).toFixed(2) + " MB/s"
+              : "--"
             }
           </p>
         </div>

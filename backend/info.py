@@ -113,56 +113,32 @@ class global_storage_info(APIView,global_info):
         info= self.get_info()
         return Response(info)
     
-class global_network_info(APIView, global_info):
+
+class global_network_info(APIView,global_info):
     def get_info(self):
 
-        connections = psutil.net_if_stats()
+        # Interface link speeds
+        speeds_list = {
+            name: stats.speed
+            for name, stats in psutil.net_if_stats().items()
+        }
 
-        ethernet_interfaces = {}
-        wifi_interfaces = {}
-        other_interfaces = {}
+        # Measure real-time bandwidth
+        old = psutil.net_io_counters()
+        time.sleep(1)
+        new = psutil.net_io_counters()
 
-        for name, stats in connections.items():
+        download_speed = (new.bytes_recv - old.bytes_recv) / 1024 / 1024
+        upload_speed = (new.bytes_sent - old.bytes_sent) / 1024 / 1024
 
-            if not stats.isup:
-                continue
-
-            speed = stats.speed
-
-            name_lower = name.lower()
-
-            # Detect Ethernet
-            if ('eth' in name_lower) or ('ethernet' in name_lower) or ('en' in name_lower):
-                ethernet_interfaces[name] = speed
-
-            # Detect WiFi
-            elif ('wifi' in name_lower) or ('wlan' in name_lower) or ('wireless' in name_lower) or ('wl' in name_lower):
-                wifi_interfaces[name] = speed
-
-            else:
-                other_interfaces[name] = speed
-
-        # Priority: Ethernet > WiFi > Others
-        if ethernet_interfaces:
-            return {
-                "type": "ethernet",
-                "connections": ethernet_interfaces
-            }
-
-        elif wifi_interfaces:
-            return {
-                "type": "wifi",
-                "connections": wifi_interfaces
-            }
-
-        else:
-            return {
-                "type": "other",
-                "connections": other_interfaces
-            }
-
-    def get(self, request):
-        info = self.get_info()
+        return {
+            # "connections": speeds_list,
+            "download_MBps": round(download_speed, 2),
+            "upload_MBps": round(upload_speed, 2)
+        }
+    
+    def get(self,request):
+        info= self.get_info()
         return Response(info)
     
 
@@ -253,3 +229,5 @@ class processes_info(APIView,global_info):
         sort_by = request.query_params.get('sort_by','cpu') #key for sorting
         info=self.get_info(n, sort_by)
         return Response(info)
+
+
