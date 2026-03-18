@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import Sidebar from "./components/sidebar";
 import BootScreen from "./pages/BootScreen";
 import MainPage from "./pages/MainPage";
@@ -13,13 +13,17 @@ import Settings from "./pages/Settings";
 
 /* Layout Wrapper */
 function Layout({ children }) {
+  const navigate = useNavigate();
+
   return (
     <div className="app-container">
       <Sidebar />
+
       <div className="content">
+        {/* FIXED GLOBAL BACK BUTTON */}
         <button
-          className="win98-btn"
-          onClick={() => window.location.href = "/"}
+          className="back-boot-btn"
+          onClick={() => navigate("/")}
         >
           ⬅ Back to Boot
         </button>

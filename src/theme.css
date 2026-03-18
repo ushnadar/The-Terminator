@@ -121,14 +121,14 @@ body::after {
 }
 
 /* ============================= */
-/* BACK BUTTON */
+/* BACK TO BOOT BUTTON - GLOBAL */
 /* ============================= */
 
 .back-boot-btn {
-  position: absolute;
+  position: fixed;
   top: 20px;
   right: 30px;
-  z-index: 999;
+  z-index: 9999;
 
   padding: 10px 18px;
   font-size: 12px;
@@ -252,7 +252,6 @@ h3 {
 .boot-screen {
   height: 100vh;
 
-  /* SAME AS MAIN PAGE */
   background:
     radial-gradient(circle at 15% 30%, rgba(255, 0, 0, 0.22), transparent 50%),
     radial-gradient(circle at 85% 70%, rgba(160, 0, 255, 0.28), transparent 55%),
@@ -352,14 +351,13 @@ h3 {
 }
 
 /* ============================= */
-/* SETTINGS INPUTS (SMALL + MORE GREY WHEN DISABLED) */
+/* SETTINGS INPUTS */
 /* ============================= */
 
 .input-group {
   margin-bottom: 14px;
 }
 
-/* small width */
 .input-field {
   width: 200px;
   padding: 6px 8px;
@@ -371,20 +369,17 @@ h3 {
   box-sizing: border-box;
 }
 
-/* white on focus */
 .input-field:focus {
   background-color: #ffffff;
   outline: none;
   border-color: #ff3c3c;
 }
 
-/* MORE GREY WHEN DISABLED (dark & clearly inactive) */
 .input-field:disabled {
   background-color: #7a7a7a;
   color: #555;
 }
 
-/* percent inside (like 35%) */
 .percent-input {
   position: relative;
   width: 200px;
@@ -401,12 +396,10 @@ h3 {
   pointer-events: none;
 }
 
-/* space for % */
 .percent-input .input-field {
   padding-right: 22px;
 }
 
-/* file input same style */
 input[type="file"].input-field {
   width: 200px;
   padding: 4px 6px;
