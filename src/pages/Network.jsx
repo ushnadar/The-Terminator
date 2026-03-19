@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 function Network() {
   const [networkData, setNetworkData] = useState(null);
   const [processData, setProcessData] = useState([]);
-  const [error, setError] = useState(null);
+  const [networkError, setNetworkError] = useState(null);
+  const [processError, setProcessError] = useState(null);
 
   useEffect(() => {
     fetchNetwork();
@@ -22,9 +23,10 @@ function Network() {
       const response = await fetch("http://127.0.0.1:8000/api/network-info/");
       const data = await response.json();
       setNetworkData(data);
+      setNetworkError(null); // Clear previous error on success
     } catch (err) {
       console.error("Error fetching network:", err);
-      setError("Failed to load network info");
+      setNetworkError("Failed to load network info");
     }
   };
 
@@ -35,9 +37,10 @@ function Network() {
       );
       const data = await response.json();
       setProcessData(data);
+      setProcessError(null); // Clear previous error on success
     } catch (err) {
       console.error("Error fetching process network data:", err);
-      setError("Failed to load process network info");
+      setProcessError("Failed to load process network info");
     }
   };
 
@@ -45,14 +48,14 @@ function Network() {
     <div>
       <h1>Network Monitoring</h1>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
       {/* TOTAL DOWNLOAD SPEED */}
       <div className="card">
         <h3>⬇ Download Speed</h3>
         <p>
           {networkData
             ? `${(networkData.download_MBps * 8).toFixed(2)} Mbps`
+            : networkError
+            ? networkError
             : "Loading..."}
         </p>
       </div>
@@ -63,6 +66,8 @@ function Network() {
         <p>
           {networkData
             ? `${(networkData.upload_MBps * 8).toFixed(2)} Mbps`
+            : networkError
+            ? networkError
             : "Loading..."}
         </p>
       </div>
@@ -70,6 +75,7 @@ function Network() {
       {/* PER PROCESS NETWORK USAGE */}
       <div className="card">
         <h3>Per-Process Network Usage</h3>
+        {processError && <p style={{ color: "red" }}>{processError}</p>}
         {processData.length > 0 ? (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -85,14 +91,18 @@ function Network() {
                 <tr key={proc.pid} style={{ borderTop: "1px solid #ccc" }}>
                   <td style={{ padding: "8px" }}>{proc.pid}</td>
                   <td style={{ padding: "8px" }}>{proc.name}</td>
-                  <td style={{ textAlign: "center" }}>{proc.download_MBps.toFixed(2)}</td>
-                  <td style={{ textAlign: "center" }}>{proc.upload_MBps.toFixed(2)}</td>
+                  <td style={{ textAlign: "center" }}>
+                    {proc.download_MBps.toFixed(2)}
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    {proc.upload_MBps.toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <p>Loading per-process network data...</p>
+          !processError && <p>Loading per-process network data...</p>
         )}
       </div>
     </div>
