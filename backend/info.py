@@ -152,7 +152,7 @@ class global_battery_info(APIView,global_info):
         percentage = b.percent
         charging=b.power_plugged
         
-        if b.secsleft == psutil.POWER_TIME_UNKNOWN: #garbage value de rha tha koi idk, -1 wow idk man i aint even have a battery to test this 
+        if b.secsleft == psutil.POWER_TIME_UNKNOWN or b.secsleft < 0 or b.secsleft > 60 * 60 * 24: #garbage value de rha tha koi idk, -1 wow idk man i aint even have a battery to test this 
             time_left = "unknown"
         elif b.secsleft == psutil.POWER_TIME_UNLIMITED: # returns -2 which gets jumbled
             time_left = "plugged in" 
