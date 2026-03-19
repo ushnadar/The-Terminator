@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 function Memory() {
   const [memoryData, setMemoryData] = useState(null);
   const [processData, setProcessData] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchMemory();
@@ -21,18 +22,20 @@ function Memory() {
       const response = await fetch("http://127.0.0.1:8000/api/memory-info/");
       const data = await response.json();
       setMemoryData(data);
-    } catch (error) {
-      console.error("Error fetching memory:", error);
+    } catch (err) {
+      console.error("Error fetching memory:", err);
+      setError("Failed to load memory info");
     }
   };
 
   const fetchProcesses = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/process-info/?sort_by=mem");
+      const response = await fetch("http://127.0.0.1:8000/api/process-info/?sort_by=mem&n=10");
       const data = await response.json();
       setProcessData(data);
-    } catch (error) {
-      console.error("Error fetching processes:", error);
+    } catch (err) {
+      console.error("Error fetching processes:", err);
+      setError("Failed to load process memory info");
     }
   };
 
@@ -40,12 +43,12 @@ function Memory() {
     <div>
       <h1>Memory Monitoring</h1>
 
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
       {/* TOTAL RAM */}
       <div className="card">
         <h3>Total RAM</h3>
-        <p>
-          {memoryData ? memoryData.total + " GB" : "Loading..."}
-        </p>
+        <p>{memoryData ? memoryData.total + " GB" : "Loading..."}</p>
       </div>
 
       {/* USED MEMORY */}
@@ -61,23 +64,31 @@ function Memory() {
       {/* AVAILABLE MEMORY */}
       <div className="card">
         <h3>Available Memory</h3>
-        <p>
-          {memoryData ? memoryData.available + " GB" : "Loading..."}
-        </p>
+        <p>{memoryData ? memoryData.available + " GB" : "Loading..."}</p>
       </div>
 
       {/* PER PROCESS MEMORY */}
       <div className="card">
         <h3>Top Memory Consuming Processes</h3>
-
         {processData.length > 0 ? (
-          <ul>
-            {processData.map((proc) => (
-              <li key={proc.pid}>
-                {proc.name} → {proc.mem} MB
-              </li>
-            ))}
-          </ul>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: "8px" }}>PID</th>
+                <th style={{ textAlign: "left", padding: "8px" }}>Process</th>
+                <th style={{ textAlign: "center", padding: "8px" }}>Memory (MB)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {processData.map((proc) => (
+                <tr key={proc.pid} style={{ borderTop: "1px solid #ccc" }}>
+                  <td style={{ padding: "8px" }}>{proc.pid}</td>
+                  <td style={{ padding: "8px" }}>{proc.name}</td>
+                  <td style={{ textAlign: "center" }}>{proc.mem}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : (
           <p>Loading processes...</p>
         )}

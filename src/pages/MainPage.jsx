@@ -8,30 +8,40 @@ function MainPage() {
   const [battery, setBattery] = useState(null);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/cpu-info/")
-      .then(res => res.json())
-      .then(data => setCpu(data))
-      .catch(err => console.log(err));
+    const fetchData = () => {
+      fetch("http://127.0.0.1:8000/api/cpu-info/")
+        .then(res => res.json())
+        .then(data => setCpu(data))
+        .catch(err => console.log(err));
 
-    fetch("http://127.0.0.1:8000/api/memory-info/")
-      .then(res => res.json())
-      .then(data => setMemory(data))
-      .catch(err => console.log(err));
+      fetch("http://127.0.0.1:8000/api/memory-info/")
+        .then(res => res.json())
+        .then(data => setMemory(data))
+        .catch(err => console.log(err));
 
-    fetch("http://127.0.0.1:8000/api/storage-info/")
-      .then(res => res.json())
-      .then(data => setStorage(data))
-      .catch(err => console.log(err));
+      fetch("http://127.0.0.1:8000/api/storage-info/")
+        .then(res => res.json())
+        .then(data => setStorage(data))
+        .catch(err => console.log(err));
 
-    fetch("http://127.0.0.1:8000/api/network-info/")
-      .then(res => res.json())
-      .then(data => setNetwork(data))
-      .catch(err => console.log(err));
+      fetch("http://127.0.0.1:8000/api/network-info/")
+        .then(res => res.json())
+        .then(data => setNetwork(data))
+        .catch(err => console.log(err));
 
-    fetch("http://127.0.0.1:8000/api/battery-info/")
-      .then(res => res.json())
-      .then(data => setBattery(data))
-      .catch(err => console.log(err));
+      fetch("http://127.0.0.1:8000/api/battery-info/")
+        .then(res => res.json())
+        .then(data => setBattery(data))
+        .catch(err => console.log(err));
+    };
+
+    // initial fetch
+    fetchData();
+
+    // interval added
+    const interval = setInterval(fetchData, 2000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -73,8 +83,8 @@ function MainPage() {
           <p>
             Speed: {
               network?.download_MBps !== undefined && network?.upload_MBps !== undefined
-              ? (network.download_MBps + network.upload_MBps).toFixed(2) + " MB/s"
-              : "--"
+                ? (network.download_MBps + network.upload_MBps).toFixed(2) + " MB/s"
+                : "--"
             }
           </p>
         </div>

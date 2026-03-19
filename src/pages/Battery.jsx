@@ -23,25 +23,44 @@ function Battery() {
     }
   };
 
+  // Helper to detect no battery
+  const noBattery = typeof batteryData === "string";
+
   return (
     <div>
       <h1>Battery Monitoring</h1>
 
       <div className="card">
         <h3>Battery Status</h3>
-        <p>{batteryData ? batteryData.perc + "%" : "Loading..."}</p>
+        <p>
+          {batteryData
+            ? noBattery
+              ? "No battery"
+              : batteryData.perc + "%"
+            : "Loading..."}
+        </p>
       </div>
 
       <div className="card">
         <h3>Charging</h3>
-        <p>{batteryData ? (batteryData.charging ? "Yes ⚡" : "No") : "Loading..."}</p>
+        <p>
+          {batteryData
+            ? noBattery
+              ? "No battery"
+              : batteryData.charging
+              ? "Yes ⚡"
+              : "No"
+            : "Loading..."}
+        </p>
       </div>
 
       <div className="card">
         <h3>Estimated Time Remaining</h3>
         <p>
           {batteryData
-            ? batteryData.charging
+            ? noBattery
+              ? "No battery"
+              : batteryData.charging
               ? "Charging..."
               : batteryData.time
               ? batteryData.time + " hours"

@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 
 function Network() {
   const [networkData, setNetworkData] = useState(null);
+  const [processData, setProcessData] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchNetwork();
+    fetchProcesses();
 
     const interval = setInterval(() => {
       fetchNetwork();
+      fetchProcesses();
     }, 2000);
 
     return () => clearInterval(interval);
@@ -18,8 +22,22 @@ function Network() {
       const response = await fetch("http://127.0.0.1:8000/api/network-info/");
       const data = await response.json();
       setNetworkData(data);
-    } catch (error) {
-      console.error("Error fetching network:", error);
+    } catch (err) {
+      console.error("Error fetching network:", err);
+      setError("Failed to load network info");
+    }
+  };
+
+  const fetchProcesses = async () => {
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/process-info/?sort_by=network&n=10"
+      );
+      const data = await response.json();
+      setProcessData(data);
+    } catch (err) {
+      console.error("Error fetching process network data:", err);
+      setError("Failed to load process network info");
     }
   };
 
@@ -27,30 +45,55 @@ function Network() {
     <div>
       <h1>Network Monitoring</h1>
 
-      {/* DOWNLOAD */}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {/* TOTAL DOWNLOAD SPEED */}
       <div className="card">
-        <h3>Download Speed</h3>
+        <h3>⬇ Download Speed</h3>
         <p>
           {networkData
-            ? (networkData.download_MBps * 8).toFixed(2) + " Mbps"
+            ? `${(networkData.download_MBps * 8).toFixed(2)} Mbps`
             : "Loading..."}
         </p>
       </div>
 
-      {/* UPLOAD */}
+      {/* TOTAL UPLOAD SPEED */}
       <div className="card">
-        <h3>Upload Speed</h3>
+        <h3>⬆ Upload Speed</h3>
         <p>
           {networkData
-            ? (networkData.upload_MBps * 8).toFixed(2) + " Mbps"
+            ? `${(networkData.upload_MBps * 8).toFixed(2)} Mbps`
             : "Loading..."}
         </p>
       </div>
 
-      {/* PLACEHOLDER */}
+      {/* PER PROCESS NETWORK USAGE */}
       <div className="card">
-        <h3>Active Connections</h3>
-        <p>Not implemented yet</p>
+        <h3>Per-Process Network Usage</h3>
+        {processData.length > 0 ? (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: "8px" }}>PID</th>
+                <th style={{ textAlign: "left", padding: "8px" }}>Process</th>
+                <th style={{ textAlign: "center", padding: "8px" }}>⬇ Download</th>
+                <th style={{ textAlign: "center", padding: "8px" }}>⬆ Upload</th>
+              </tr>
+            </thead>
+            <tbody>
+              {processData.map((proc) => (
+                <tr key={proc.pid} style={{ borderTop: "1px solid #ccc" }}>
+                  <td style={{ padding: "8px" }}>{proc.pid}</td>
+                  <td style={{ padding: "8px" }}>{proc.name}</td>
+                  <td style={{ textAlign: "center" }}>{proc.download_MBps.toFixed(2)}</td>
+                  <td style={{ textAlign: "center" }}>{proc.upload_MBps.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>Loading per-process network data...</p>
+        )}
       </div>
     </div>
   );
