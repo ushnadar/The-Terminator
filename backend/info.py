@@ -207,13 +207,13 @@ class processes_info(APIView,global_info):
                 io_after  = p.io_counters()
                 io_before = data['io']
 
-                upload_MBps   = round((io_after.write_bytes - io_before.write_bytes) /(1024**2), 2)
-                download_MBps = round((io_after.read_bytes  - io_before.read_bytes)  /(1024**2), 2)
+                upload_MBps   = round((io_after.read_bytes - io_before.read_bytes) /(1024**2), 2)
+                download_MBps = round((io_after.write_bytes  - io_before.write_bytes)  /(1024**2), 2)
 
                 procs.append({
                     'pid':          p.info['pid'],
                     'name':         p.info['name'],
-                    'upload_MBps':   upload_MBps,
+                    'upload_MBps':   upload_MBps, #this is actually on the disk (actually they are kinda similar so i am keeping this as that)
                     'download_MBps': download_MBps,
                 })
                 
