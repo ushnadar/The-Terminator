@@ -21,7 +21,6 @@ class Settings(models.Model): #settings ka database to issi se ho jaye ga INCRED
     
     network_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)]) # ye wala originally nahi tha included lekin add ker ke kya hi jaye ga
 
-
     class Meta: #checks ON the db directly
         constraints = [models.CheckConstraint(condition=Q(cpu_enabled=False) | Q(cpu_threshold__isnull=False),name="cpu_threshold_required_if_enabled"),
                 models.CheckConstraint(condition=Q(memory_enabled=False) | Q(memory_threshold__isnull=False),name="memory_threshold_required_if_enabled"),
