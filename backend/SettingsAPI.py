@@ -3,10 +3,15 @@ from django.views.decorators.http import require_http_methods
 from .models import Settings
 import json
 
+
+def get_or_create_settings():
+    settings, created = Settings.objects.get_or_create()
+    return settings
+
 @require_http_methods(["GET"])
 def get_settings(request):
     try:
-        settings = Settings.objects.get()  
+        settings = get_or_create_settings()  
 
         return JsonResponse({
             'username': settings.username,
@@ -28,7 +33,7 @@ def get_settings(request):
 def update_settings(request):
     try:
         data = json.loads(request.body)
-        settings = Settings.objects.get()
+        settings = get_or_create_settings() 
         
         settings.username = data.get('username', settings.username)
         settings.cpu_enabled = data.get('cpu_enabled', settings.cpu_enabled)
