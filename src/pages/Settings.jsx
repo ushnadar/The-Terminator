@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function Settings() {
   const [username, setUsername] = useState("");
@@ -8,13 +8,64 @@ function Settings() {
   const [disk, setDisk] = useState("");
   const [battery, setBattery] = useState("");
 
-  // individual enable/disable
   const [cpuEnabled, setCpuEnabled] = useState(true);
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [diskEnabled, setDiskEnabled] = useState(true);
   const [batteryEnabled, setBatteryEnabled] = useState(true);
 
   const [selectedFolder, setSelectedFolder] = useState("");
+
+  // ✅ Fetch data from backend
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/get_settings/")
+      .then((res) => res.json())
+      .then((data) => {
+        setUsername(data.username || "");
+
+        setCpu(data.cpu_threshold ?? "");
+        setMemory(data.memory_threshold ?? "");
+        setDisk(data.disk_threshold ?? "");
+        setBattery(data.battery_threshold ?? "");
+
+        setCpuEnabled(data.cpu_enabled ?? true);
+        setMemoryEnabled(data.memory_enabled ?? true);
+        setDiskEnabled(data.disk_enabled ?? true);
+        setBatteryEnabled(data.battery_enabled ?? true);
+      })
+      .catch((err) => console.error("Error fetching settings:", err));
+  }, []);
+
+  // ✅ Save settings to backend
+  const handleSave = () => {
+    const payload = {
+      username: username,
+
+      cpu_enabled: cpuEnabled,
+      cpu_threshold: cpu,
+
+      memory_enabled: memoryEnabled,
+      memory_threshold: memory,
+
+      disk_enabled: diskEnabled,
+      disk_threshold: disk,
+
+      battery_enabled: batteryEnabled,
+      battery_threshold: battery,
+    };
+
+    fetch("http://127.0.0.1:8000/update_settings/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        alert(data.message || "Settings saved!");
+      })
+      .catch((err) => console.error("Error saving settings:", err));
+  };
 
   const handleRangeChange = (value, setter, min, max) => {
     if (value === "") {
@@ -80,7 +131,7 @@ function Settings() {
 
         {/* CPU */}
         <div className="input-group">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px" }}>
             <input
               type="checkbox"
               checked={cpuEnabled}
@@ -89,22 +140,20 @@ function Settings() {
             <p>CPU Threshold</p>
           </div>
 
-          <div className="percent-input">
-            <input
-              className="input-field"
-              type="number"
-              value={cpu}
-              disabled={!cpuEnabled}
-              onChange={(e) =>
-                handleRangeChange(e.target.value, setCpu, 35, 100)
-              }
-            />
-          </div>
+          <input
+            className="input-field"
+            type="number"
+            value={cpu}
+            disabled={!cpuEnabled}
+            onChange={(e) =>
+              handleRangeChange(e.target.value, setCpu, 35, 100)
+            }
+          />
         </div>
 
         {/* Memory */}
         <div className="input-group">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px" }}>
             <input
               type="checkbox"
               checked={memoryEnabled}
@@ -113,22 +162,20 @@ function Settings() {
             <p>Memory Threshold</p>
           </div>
 
-          <div className="percent-input">
-            <input
-              className="input-field"
-              type="number"
-              value={memory}
-              disabled={!memoryEnabled}
-              onChange={(e) =>
-                handleRangeChange(e.target.value, setMemory, 35, 100)
-              }
-            />
-          </div>
+          <input
+            className="input-field"
+            type="number"
+            value={memory}
+            disabled={!memoryEnabled}
+            onChange={(e) =>
+              handleRangeChange(e.target.value, setMemory, 35, 100)
+            }
+          />
         </div>
 
         {/* Disk */}
         <div className="input-group">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px" }}>
             <input
               type="checkbox"
               checked={diskEnabled}
@@ -137,22 +184,20 @@ function Settings() {
             <p>Disk Threshold</p>
           </div>
 
-          <div className="percent-input">
-            <input
-              className="input-field"
-              type="number"
-              value={disk}
-              disabled={!diskEnabled}
-              onChange={(e) =>
-                handleRangeChange(e.target.value, setDisk, 35, 100)
-              }
-            />
-          </div>
+          <input
+            className="input-field"
+            type="number"
+            value={disk}
+            disabled={!diskEnabled}
+            onChange={(e) =>
+              handleRangeChange(e.target.value, setDisk, 35, 100)
+            }
+          />
         </div>
 
         {/* Battery */}
         <div className="input-group">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px" }}>
             <input
               type="checkbox"
               checked={batteryEnabled}
@@ -161,19 +206,29 @@ function Settings() {
             <p>Battery Threshold</p>
           </div>
 
-          <div className="percent-input">
-            <input
-              className="input-field"
-              type="number"
-              value={battery}
-              disabled={!batteryEnabled}
-              onChange={(e) =>
-                handleRangeChange(e.target.value, setBattery, 0, 100)
-              }
-            />
-          </div>
+          <input
+            className="input-field"
+            type="number"
+            value={battery}
+            disabled={!batteryEnabled}
+            onChange={(e) =>
+              handleRangeChange(e.target.value, setBattery, 0, 100)
+            }
+          />
         </div>
       </div>
+
+      {/* Save Button */}
+      <button
+        onClick={handleSave}
+        style={{
+          marginTop: "20px",
+          padding: "10px 20px",
+          cursor: "pointer",
+        }}
+      >
+        Save Settings
+      </button>
     </div>
   );
 }
