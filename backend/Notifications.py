@@ -56,14 +56,14 @@ class show_alert_notification:
         toast.set_audio(config['audio'], loop=False)
         
         
-        toast.add_actions(
-            label="Acknowledge Alert",
-            launch=f"http://127.0.0.1:8000/api/alerts/acknowledge?alert_id={alert.alert_id}"  #idher actually frontend ka anna hai lekin abhi ke liye backend ka url daal diya hai cause why not
-        )
+        # toast.add_actions(
+        #     label="Acknowledge Alert",
+        #     launch=f"http://127.0.0.1:8000/api/alerts/acknowledge?alert_id={alert.alert_id}"  #idher actually frontend ka anna hai lekin abhi ke liye backend ka url daal diya hai cause why not
+        # )
         
         toast.add_actions(
             label="View All Alerts",
-            launch=f"http://127.0.0.1:8000/api/alerts"
+            launch=f"http://localhost:5173/alerts"
         )
 
         toast.show()

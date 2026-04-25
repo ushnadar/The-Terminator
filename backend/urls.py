@@ -9,6 +9,8 @@ from .info import processes_info
 
 from . import SettingsAPI #settings wala api (totally separate)
 from . import AlertsAPI 
+
+from .TerminatorAI import TerminatorAnalysisView, TerminatorExecuteView
 urlpatterns = [
     path('api/cpu-info/', global_cpu_info.as_view()),
     path('api/memory-info/', global_memory_info.as_view()),
@@ -23,4 +25,8 @@ urlpatterns = [
     path('api/alerts/', AlertsAPI.get_alerts),
     path('api/alerts/acknowledge/', AlertsAPI.acknowledge_alert),
     path('api/alerts/delete/', AlertsAPI.delete_alert),
+
+    path('api/terminator/analyze/', TerminatorAnalysisView.as_view()),
+    path('api/terminator/execute/', TerminatorExecuteView.as_view()),
+
 ]

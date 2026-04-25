@@ -6,7 +6,7 @@ function Alerts() {
 
   // ✅ Fetch alerts from backend
   const fetchAlerts = () => {
-    fetch("http://127.0.0.1:8000/get_alerts/?n=10")
+    fetch("http://127.0.0.1:8000/api/alerts/?n=10")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -27,7 +27,7 @@ function Alerts() {
   // ✅ Acknowledge alert
   const handleAcknowledge = (id) => {
     fetch(
-      `http://127.0.0.1:8000/acknowledge_alert/?alert_id=${id}`
+      `http://127.0.0.1:8000/api/alerts/acknowledge/?alert_id=${id}`
     )
       .then((res) => res.json())
       .then(() => {
@@ -39,7 +39,7 @@ function Alerts() {
   // ✅ Delete alert
   const handleDelete = (id) => {
     fetch(
-      `http://127.0.0.1:8000/delete_alert/?alert_id=${id}`,
+      `http://127.0.0.1:8000/api/alerts/delete/?alert_id=${id}`,
       {
         method: "DELETE",
       }

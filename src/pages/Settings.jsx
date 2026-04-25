@@ -17,7 +17,7 @@ function Settings() {
 
   // ✅ Fetch data from backend
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/get_settings/")
+    fetch("http://127.0.0.1:8000/api/settings/")
       .then((res) => res.json())
       .then((data) => {
         setUsername(data.username || "");
@@ -53,7 +53,7 @@ function Settings() {
       battery_threshold: battery,
     };
 
-    fetch("http://127.0.0.1:8000/update_settings/", {
+    fetch("http://127.0.0.1:8000/api/settings/update/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
