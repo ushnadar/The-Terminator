@@ -4,6 +4,7 @@ from .models import Alerts
 from django.utils import timezone
 import json
 from datetime import timedelta
+from django.views.decorators.csrf import csrf_exempt
 
 @require_http_methods(["GET"])
 def get_alerts(request):
@@ -11,7 +12,6 @@ def get_alerts(request):
         
         n = int(request.GET.get('n', 10))  
         
-
         resource = request.GET.get('resource', None)          #optional filters 
         alert_level = request.GET.get('alert_level', None)  
         pid = request.GET.get('pid', None)  
@@ -48,7 +48,7 @@ def get_alerts(request):
         alerts_data = []
         for alert in alerts_list:
             alerts_data.append({
-                'id': alert.id,
+                'alert_id': alert.alert_id,
                 'pid': alert.pid,
                 'process_name': alert.process_name,
                 'alert_level': alert.alert_level,
@@ -70,16 +70,15 @@ def get_alerts(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET"])
 def acknowledge_alert(request): #this is the alert carry out kerna ho list mei sei (wese kya hi carry out ho ga agar time guzar jaye lol)
     try:
-        data = json.loads(request.body)
-        alert_id = data.get('alert_id')
+        alert_id = request.GET.get('alert_id')
         
         if not alert_id:
             return JsonResponse({'error': 'alert_id required'}, status=400)
         
-        alert = Alerts.objects.get(id=alert_id)
+        alert = Alerts.objects.get(alert_id=alert_id)
         alert.is_acknowledged = True
         alert.save()
         
@@ -93,16 +92,16 @@ def acknowledge_alert(request): #this is the alert carry out kerna ho list mei s
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
-
+@csrf_exempt
 @require_http_methods(["DELETE"]) #optional alert urana ho to 
 def delete_alert(request):
     try:
-        alert_id = request.GET.get('id')
+        alert_id = request.GET.get('alert_id')
         
         if not alert_id:
             return JsonResponse({'error': 'id parameter required'}, status=400)
         
-        alert = Alerts.objects.get(id=alert_id)
+        alert = Alerts.objects.get(alert_id=alert_id)
         alert.delete()
         
         return JsonResponse({

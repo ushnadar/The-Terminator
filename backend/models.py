@@ -16,12 +16,12 @@ class Settings(models.Model): #settings ka database to issi se ho jaye ga INCRED
     battery_enabled =models.BooleanField(default=False)
     network_enabled=models.BooleanField(default=False)
 
-    cpu_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)])
-    memory_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)])
-    disk_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)])
-    battery_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(0), MaxValueValidator(100)])
+    cpu_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)],default=80)
+    memory_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)],default=70)
+    disk_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)],default=95)
+    battery_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(0), MaxValueValidator(100)],default=30)
     
-    network_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)]) # ye wala originally nahi tha included lekin add ker ke kya hi jaye ga
+    network_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)],default=90) # ye wala originally nahi tha included lekin add ker ke kya hi jaye ga
 
     class Meta: #checks ON the db directly
         constraints = [models.CheckConstraint(condition=Q(cpu_enabled=False) | Q(cpu_threshold__isnull=False),name="cpu_threshold_required_if_enabled"),
@@ -32,7 +32,7 @@ class Settings(models.Model): #settings ka database to issi se ho jaye ga INCRED
         
 
 class Alerts(models.Model):
-    
+    alert_id = models.AutoField(primary_key=True)
     pid = models.IntegerField()  
     process_name = models.CharField(max_length=255, blank=True) 
     alert_level = models.CharField(max_length=50,default='warning')

@@ -3,6 +3,9 @@ from django.views.decorators.http import require_http_methods
 from .models import Settings
 import json
 
+from django.views.decorators.csrf import csrf_exempt
+
+
 
 def get_or_create_settings():
     settings, created = Settings.objects.get_or_create()
@@ -29,6 +32,7 @@ def get_settings(request):
     except Settings.DoesNotExist:
         return JsonResponse({'error': 'Settings not found'}, status=404)
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def update_settings(request):
     try:
