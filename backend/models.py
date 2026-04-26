@@ -44,6 +44,8 @@ class Alerts(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)  
     is_acknowledged = models.BooleanField(default=False)  # ye baad mei true ho jaye ga if the user handles this
+
+    recommendations=  recommendations = models.JSONField(default=list, blank=True)
     
     class Meta:
         ordering = ['-created_at']  # ordering
