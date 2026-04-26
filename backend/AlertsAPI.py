@@ -58,6 +58,7 @@ def get_alerts(request):
                 'threshold': alert.threshold,
                 'created_at': alert.created_at.isoformat(),
                 'is_acknowledged': alert.is_acknowledged,
+                'recommendations':alert.recommendations
             })
         
         return JsonResponse({

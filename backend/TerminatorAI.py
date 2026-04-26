@@ -365,7 +365,15 @@ class AnalysisAgent(BaseAgent):
         )[:3]
 
         offenders = []
-        for p in top_cpu + top_mem:
+        # Add CPU processes with resource type
+        for p in top_cpu:
+            p["resource"] = "cpu"
+            if p not in offenders:
+                offenders.append(p)
+        
+        # Add memory processes with resource type
+        for p in top_mem:
+            p["resource"] = "memory"
             if p not in offenders:
                 offenders.append(p)
 
@@ -408,17 +416,32 @@ class RecommendationAgent(BaseAgent):
 
     def _rule_based_recommendations(self, analysis: dict, metrics: dict) -> list[dict]:
         recs, priority = [], 1
+        
+        # Get anomalies from analysis
+        anomalies = analysis.get("root_causes", [])
+        
         for proc in analysis.get("top_offending_processes", [])[:5]:
-            recs.append({
-                "priority": priority,
-                "title": f"High resource: {proc.get('name', '?')}",
-                "description": f"{proc.get('name')} (PID {proc.get('pid')}) using resources",
-                "process_name": proc.get("name"),
-                "process_pid": proc.get("pid"),
-                "action": "alert_user",
-                "estimated_gain": "Monitoring",
-            })
-            priority += 1
+            resource = proc.get("resource")  # "cpu" or "memory"
+                        
+            if not resource:    
+                continue
+
+            # Check if this resource has an anomaly
+            has_anomaly = any(resource in cause.lower() for cause in anomalies)
+            
+            if has_anomaly or not anomalies:
+                recs.append({
+                    "priority": priority,
+                    "title": f"Kill {proc.get('name', '?')}",
+                    "description": f"Terminate {proc.get('name')} (PID {proc.get('pid')}) to reduce {resource} usage",
+                    "process_name": proc.get("name"),
+                    "process_pid": proc.get("pid"),
+                    "action": "kill_process",  # Changed from alert_user
+                    "estimated_gain": f"Reduce {resource} usage by ~{priority*15}%",
+                    "resource": resource,
+                })
+                priority += 1
+        
         return recs
 
 
@@ -552,6 +575,7 @@ def get_terminator_graph(llm=None):
 class TerminatorAnalysisView(APIView):
     """
     POST /api/terminator/analyze/
+    Runs analysis, creates alerts with specific recommendations per alert
     """
 
     def post(self, request):
@@ -560,42 +584,46 @@ class TerminatorAnalysisView(APIView):
             # Run async code synchronously
             state = asyncio.run(graph.run(user_approved=False))
 
-            # Create alerts and show notifications
             alerts_created = 0
             for anomaly in state.get("anomalies", []):
                 top_proc = anomaly.get("top_process", {})
                 
-                # Create alert in database
+                # Generate recommendations specific to THIS anomaly/process
+                process_pid = top_proc.get("pid") if top_proc else None
+                anomaly_specific_recs = [
+                    r for r in state.get("recommendations", [])
+                    if process_pid and r.get("process_pid") == process_pid
+                ]
+                
+                # Create alert in database with specific recommendations
                 alert = Alerts.objects.create(
-                    pid=top_proc.get("pid", 0) if top_proc else 0,
+                    pid=process_pid if process_pid else 0,
                     process_name=top_proc.get("name", "System") if top_proc else "System",
                     alert_level=anomaly["severity"],
                     resource=anomaly["resource"],
                     alert_message=anomaly["detail"],
                     resource_value=anomaly.get("value"),
                     threshold=anomaly.get("threshold"),
+                    recommendations=anomaly_specific_recs,  # Per-alert recommendations
                 )
                 alerts_created += 1
                 
                 # Show notification
                 try:
                     show_alert_notification(alert)
-                    logger.info(f"🔔 Notification shown for {anomaly['resource']} alert")
+                    logger.info(f"🔔 Notification shown for {anomaly['resource']} alert - {top_proc.get('name', 'System') if top_proc else 'System'}")
                 except Exception as e:
-                    logger.warning(f"Notification failed: {e}")
+                    logger.error(f"❌ Notification failed for {anomaly['resource']}: {e}", exc_info=True)
 
             return Response({
                 "success": True,
-                # "metrics": state.get("metrics"),
-                # "anomalies": state.get("anomalies"),
-                # "analysis": state.get("analysis"),
                 "recommendations": state.get("recommendations"),
                 "alerts_created": alerts_created,
             })
         except Exception as e:
-            logger.error("Terminator analysis failed: %s", e)
+            logger.error("Terminator analysis failed: %s", e, exc_info=True)
             return Response({"error": str(e)}, status=500)
-
+        
 class TerminatorExecuteView(APIView):
     """
     POST /api/terminator/execute/
