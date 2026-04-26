@@ -4,7 +4,12 @@ function Alerts() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch alerts from backend
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+
+  const [selected, setSelected] = useState({});
+  // { alertId: [recIndex1, recIndex2] }
+
+  // ✅ Fetch alerts
   const fetchAlerts = () => {
     fetch("http://127.0.0.1:8000/api/alerts/?n=10")
       .then((res) => res.json())
@@ -15,7 +20,7 @@ function Alerts() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching alerts:", err);
+        console.error(err);
         setLoading(false);
       });
   };
@@ -24,43 +29,99 @@ function Alerts() {
     fetchAlerts();
   }, []);
 
-  // ✅ Acknowledge alert
-  const handleAcknowledge = (id) => {
-    fetch(
-      `http://127.0.0.1:8000/api/alerts/acknowledge/?alert_id=${id}`
-    )
+  // 🔥 RUN ANALYSIS (RESTORED)
+  const runAnalysis = () => {
+    setAnalysisLoading(true);
+
+    fetch("http://127.0.0.1:8000/api/terminator/analyze/", {
+      method: "POST",
+    })
       .then((res) => res.json())
-      .then(() => {
-        fetchAlerts(); // refresh list
+      .then((data) => {
+        console.log("Analysis:", data);
+        fetchAlerts(); // refresh alerts after analysis
+      })
+      .catch((err) => console.error(err))
+      .finally(() => setAnalysisLoading(false));
+  };
+
+  // ✅ Toggle checkbox per alert recommendation
+  const toggleSelect = (alertId, index) => {
+    setSelected((prev) => {
+      const current = prev[alertId] || [];
+
+      const updated = current.includes(index)
+        ? current.filter((i) => i !== index)
+        : [...current, index];
+
+      return { ...prev, [alertId]: updated };
+    });
+  };
+
+  // ✅ Execute selected recommendations for alert
+  const executeSelected = (alert) => {
+    const selectedIndexes = selected[alert.alert_id] || [];
+
+    if (selectedIndexes.length === 0) {
+      alert("Select at least one recommendation");
+      return;
+    }
+
+    const approved = selectedIndexes.map(
+      (i) => alert.recommendations[i]
+    );
+
+    fetch("http://127.0.0.1:8000/api/terminator/execute/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        approved_recommendations: approved,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Execution:", data);
+        fetchAlerts();
       })
       .catch((err) => console.error(err));
   };
 
-  // ✅ Delete alert
+  // ✅ Acknowledge
+  const handleAcknowledge = (id) => {
+    fetch(
+      `http://127.0.0.1:8000/api/alerts/acknowledge/?alert_id=${id}`
+    )
+      .then(() => fetchAlerts())
+      .catch((err) => console.error(err));
+  };
+
+  // ✅ Delete
   const handleDelete = (id) => {
     fetch(
       `http://127.0.0.1:8000/api/alerts/delete/?alert_id=${id}`,
-      {
-        method: "DELETE",
-      }
+      { method: "DELETE" }
     )
-      .then((res) => res.json())
-      .then(() => {
-        fetchAlerts(); // refresh list
-      })
+      .then(() => fetchAlerts())
       .catch((err) => console.error(err));
   };
 
   return (
     <div>
-      <h1>Active AI Alerts</h1>
+      <h1>AI Terminator Dashboard</h1>
+
+      {/* 🔥 RUN ANALYSIS (BACK AGAIN) */}
+      <button onClick={runAnalysis} disabled={analysisLoading}>
+        {analysisLoading ? "Analyzing..." : "Run Analysis"}
+      </button>
+
+      <h2>Active Alerts</h2>
 
       {loading ? (
         <p>Loading alerts...</p>
       ) : alerts.length === 0 ? (
-        <div className="alert-card">
-          No active alerts detected.
-        </div>
+        <div>No active alerts</div>
       ) : (
         alerts.map((alert) => (
           <div key={alert.alert_id} className="alert-card">
@@ -70,28 +131,61 @@ function Alerts() {
             <p><b>Resource:</b> {alert.resource}</p>
             <p><b>Level:</b> {alert.alert_level}</p>
             <p><b>Message:</b> {alert.alert_message}</p>
+
             <p>
-              <b>Value:</b> {alert.resource_value} /{" "}
-              {alert.threshold}
-            </p>
-            <p>
-              <b>Time:</b>{" "}
-              {new Date(alert.created_at).toLocaleString()}
-            </p>
-            <p>
-              <b>Status:</b>{" "}
-              {alert.is_acknowledged
-                ? "Acknowledged"
-                : "Pending"}
+              <b>Value:</b> {alert.resource_value} / {alert.threshold}
             </p>
 
+            <p>
+              <b>Status:</b>{" "}
+              {alert.is_acknowledged ? "Acknowledged" : "Pending"}
+            </p>
+
+            {/* 🔥 Recommendations with CHECKBOXES */}
+            {alert.recommendations &&
+              alert.recommendations.length > 0 && (
+                <div style={{ marginTop: "10px" }}>
+                  <b>Recommendations:</b>
+
+                  {alert.recommendations.map((rec, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginTop: "5px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={
+                          selected[alert.alert_id]?.includes(index) || false
+                        }
+                        onChange={() =>
+                          toggleSelect(alert.alert_id, index)
+                        }
+                      />
+
+                      <span>
+                        {rec.process_name} → {rec.action}
+                      </span>
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={() => executeSelected(alert)}
+                    style={{ marginTop: "8px" }}
+                  >
+                    Execute 
+                  </button>
+                </div>
+              )}
+
+            {/* 🔘 Actions */}
             <div style={{ marginTop: "10px" }}>
               {!alert.is_acknowledged && (
-                <button
-                  onClick={() =>
-                    handleAcknowledge(alert.alert_id)
-                  }
-                >
+                <button onClick={() => handleAcknowledge(alert.alert_id)}>
                   Acknowledge
                 </button>
               )}
