@@ -1,2 +1,2 @@
-# the-terminator-frontend
+# the-terminator
 
