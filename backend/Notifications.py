@@ -5,21 +5,51 @@ import threading
 import time
 import sys
 
-# Setup Django
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 django.setup()
 
 from backend.models import Settings, Alerts
-
 from collections import defaultdict
 
-_last_notified: dict[str, float] = defaultdict(float)
-NOTIFICATION_COOLDOWN = 10  #endless spam nahi chahiye bhai 
+NOTIFICATION_COOLDOWN = 30  # endless spam nahi chahiye bhai
+
+class _CooldownTracker:
+    """Singleton so state survives across multiple instantiations."""
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._last_notified = defaultdict(float)
+        return cls._instance
+
+    def should_fire(self, resource: str) -> bool:
+        now = time.time()
+        with self._lock:
+            if now - self._last_notified[resource] < NOTIFICATION_COOLDOWN:
+                return False
+            self._last_notified[resource] = now
+            return True
+
+
+_cooldown_tracker = _CooldownTracker()
+
 
 class show_alert_notification:
-    def __init__(self,alert:Alerts):
-        self.alert=alert
+    def __init__(self, alert: Alerts):
+        self.alert = alert
+
+        # Check settings FIRST (cheap), then cooldown (modifies state)
+        if not self._should_notify_for_resource(alert.resource):
+            return
+
+        # Cooldown check — only updates state if we're actually going to notify
+        if not _cooldown_tracker.should_fire(alert.resource):
+            return
 
         alert_config = {
             'critical': {
@@ -43,48 +73,32 @@ class show_alert_notification:
                 'duration': 'short'
             }
         }
-        
 
         config = alert_config.get(alert.alert_level, alert_config['info'])
-        
-        if(self.should_notify_for_resource(alert.resource)):
 
-            now = time.time()
-            last = _last_notified[alert.resource]
-            if now - last < NOTIFICATION_COOLDOWN:
-                return  # too soon, skip
-            _last_notified[alert.resource] = now
+        toast = Notification(
+            app_id="The Terminator",
+            title=config['title'],
+            msg=alert.alert_message,
+            duration=config['duration']
+        )
 
-            toast = Notification(
-                app_id="The Terminator",
-                title=config['title'],
-                msg=alert.alert_message,
-                duration=config['duration']
-            )
-            
-            # Set audio
-            toast.set_audio(config['audio'], loop=False)
-            
-            
-            # toast.add_actions(
-            #     label="Acknowledge Alert",
-            #     launch=f"http://127.0.0.1:8000/api/alerts/acknowledge?alert_id={alert.alert_id}"  #idher actually frontend ka anna hai lekin abhi ke liye backend ka url daal diya hai cause why not
-            # )
-            
-            toast.add_actions(
-                label="View All Alerts",
-                launch=f"http://localhost:5173/alerts"
-            )
+        toast.set_audio(config['audio'], loop=False)
 
-            toast.show()
-    
-    def get_settings(self):
+        toast.add_actions(
+            label="View All Alerts",
+            launch="http://localhost:5173/alerts"
+        )
+
+        toast.show()
+
+    def _get_settings(self):
         settings, _ = Settings.objects.get_or_create()
         return settings
-    
-    def should_notify_for_resource(self, resource):
-        settings = self.get_settings()
-        
+
+    def _should_notify_for_resource(self, resource: str) -> bool:
+        settings = self._get_settings()
+
         resource_enabled_map = {
             'cpu': settings.cpu_enabled,
             'memory': settings.memory_enabled,
@@ -93,6 +107,5 @@ class show_alert_notification:
             'network': settings.network_enabled,
             'filesystem': True,
         }
-        
-        return resource_enabled_map.get(resource, False) and settings.allow_notifications 
-  
+
+        return resource_enabled_map.get(resource, False) and settings.allow_notifications
