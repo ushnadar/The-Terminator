@@ -8,7 +8,7 @@ class Settings(models.Model): #settings ka database to issi se ho jaye ga INCRED
     singleton_enforcer = models.BooleanField(default=True, unique=True)
     
     username = models.CharField(max_length=100, blank=True)
-    # folder = models.CharField(max_length=255, blank=True)  # add later
+    folder = models.CharField(max_length=255, blank=True)  # add later
 
     cpu_enabled = models.BooleanField(default=False)
     memory_enabled =models.BooleanField(default=False)
@@ -22,6 +22,8 @@ class Settings(models.Model): #settings ka database to issi se ho jaye ga INCRED
     battery_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(0), MaxValueValidator(100)],default=30)
     
     network_threshold = models.IntegerField(null=True,blank=True,validators=[MinValueValidator(30), MaxValueValidator(100)],default=90) # ye wala originally nahi tha included lekin add ker ke kya hi jaye ga
+
+    allow_notifications= models.BooleanField(default=False)
 
     class Meta: #checks ON the db directly
         constraints = [models.CheckConstraint(condition=Q(cpu_enabled=False) | Q(cpu_threshold__isnull=False),name="cpu_threshold_required_if_enabled"),
@@ -51,3 +53,16 @@ class Alerts(models.Model):
         ordering = ['-created_at']  # ordering
         indexes = [models.Index(fields=['-created_at']),models.Index(fields=['pid']),models.Index(fields=['resource']),]
     
+
+class History(models.Model):
+    history_id = models.AutoField(primary_key=True)
+    pid = models.IntegerField()
+    process_name = models.CharField(max_length=255, blank=True) 
+    resource = models.CharField(max_length=50)
+    resource_value = models.FloatField(null=True, blank=True)  
+    created_at = models.DateTimeField(auto_now_add=True)  
+
+    class Meta:
+        ordering = ['-created_at']  # ordering
+        indexes = [models.Index(fields=['-created_at']),models.Index(fields=['pid']),models.Index(fields=['resource']),]
+

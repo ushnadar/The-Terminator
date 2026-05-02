@@ -5,8 +5,6 @@ import json
 
 from django.views.decorators.csrf import csrf_exempt
 
-
-
 def get_or_create_settings():
     settings, created = Settings.objects.get_or_create()
     return settings
@@ -27,7 +25,10 @@ def get_settings(request):
             'battery_enabled':settings.battery_enabled,
             'battery_threshold':settings.battery_threshold,
             'network_enabled':settings.network_enabled,
-            'network_threshold':settings.network_threshold
+            'network_threshold':settings.network_threshold,
+            'folder-path':settings.folder,
+            "allow_notifications":settings.allow_notifications
+
         })
     except Settings.DoesNotExist:
         return JsonResponse({'error': 'Settings not found'}, status=404)
@@ -50,6 +51,10 @@ def update_settings(request):
         settings.battery_threshold = data.get('battery_threshold', settings.battery_threshold)
         settings.network_enabled = data.get('network_enabled', settings.network_enabled)
         settings.network_threshold = data.get('network_threshold', settings.network_threshold)
+
+        settings.folder= data.get('folder', settings.folder)
+
+        settings.allow_notifications =data.get('allow_notifications',settings.allow_notifications)
 
         settings.full_clean()  #validation
         settings.save()

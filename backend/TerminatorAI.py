@@ -414,21 +414,23 @@ class RecommendationAgent(BaseAgent):
             logger.warning("LLM recommendations failed: %s", exc)
             return self._rule_based_recommendations(analysis, metrics)
 
+    
     def _rule_based_recommendations(self, analysis: dict, metrics: dict) -> list[dict]:
         recs, priority = [], 1
-        
-        # Get anomalies from analysis
         anomalies = analysis.get("root_causes", [])
-        
+
         for proc in analysis.get("top_offending_processes", [])[:5]:
-            resource = proc.get("resource")  # "cpu" or "memory"
-                        
-            if not resource:    
+            resource = proc.get("resource")
+            if not resource:
                 continue
 
-            # Check if this resource has an anomaly
-            has_anomaly = any(resource in cause.lower() for cause in anomalies)
-            
+            keywords = RESOURCE_KEYWORDS.get(resource, [resource])
+            has_anomaly = any(
+                keyword in cause.lower()
+                for cause in anomalies
+                for keyword in keywords
+            )
+
             if has_anomaly or not anomalies:
                 recs.append({
                     "priority": priority,
@@ -436,13 +438,20 @@ class RecommendationAgent(BaseAgent):
                     "description": f"Terminate {proc.get('name')} (PID {proc.get('pid')}) to reduce {resource} usage",
                     "process_name": proc.get("name"),
                     "process_pid": proc.get("pid"),
-                    "action": "kill_process",  # Changed from alert_user
+                    "action": "kill_process",
                     "estimated_gain": f"Reduce {resource} usage by ~{priority*15}%",
                     "resource": resource,
                 })
                 priority += 1
-        
+
         return recs
+  
+RESOURCE_KEYWORDS = {
+    "cpu": ["cpu"],
+    "memory": ["ram", "memory"],
+    "disk": ["disk"],
+    "network": ["network"],
+}
 
 
 class ExecutionAgent(BaseAgent):
@@ -627,35 +636,162 @@ class TerminatorAnalysisView(APIView):
 class TerminatorExecuteView(APIView):
     """
     POST /api/terminator/execute/
+    Body: {"alert_id": 123, "recommendation_index": 0}
     """
 
     def post(self, request):
         try:
+            alert_id = request.data.get("alert_id")
+            rec_index = request.data.get("recommendation_index")
+
+            if alert_id is None:
+                return Response({"error": "alert_id is required"}, status=400)
+            if rec_index is None:
+                return Response({"error": "recommendation_index is required"}, status=400)
+
+            alert = Alerts.objects.get(alert_id=alert_id)
+            recommendations = alert.recommendations
+
+            if rec_index >= len(recommendations) or rec_index < 0:
+                return Response({"error": f"Invalid index, alert has {len(recommendations)} recommendations"}, status=400)
+
+            selected_rec = recommendations[rec_index]
+
+            state = {
+                "recommendations": [selected_rec],
+                "user_approved": True,
+                "execution_result": {},
+                "metrics": {}, "metric_history": [], "anomalies": [],
+                "analysis": {}, "messages": [],
+            }
+
             graph = get_terminator_graph()
-            approved_indices = request.data.get("approved_recommendations", [])
-            
-            # Run async code synchronously
-            state = asyncio.run(graph.run(user_approved=False))
-            
-            # Filter by approved indices
-            approved_recs = [
-                state["recommendations"][i] 
-                for i in approved_indices 
-                if i < len(state["recommendations"])
-            ]
-            
-            state["user_approved"] = True
-            state["recommendations"] = approved_recs
             exec_state = asyncio.run(graph.execution_agent.run(state))
 
             return Response({
                 "success": True,
+                "executed_recommendation": selected_rec,
                 "actions_taken": exec_state["execution_result"].get("actions_taken", []),
                 "errors": exec_state["execution_result"].get("errors", []),
             })
+
+        except Alerts.DoesNotExist:
+            return Response({"error": "Alert not found"}, status=404)
         except Exception as e:
             logger.error("Terminator execution failed: %s", e)
             return Response({"error": str(e)}, status=500)
+                
+
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  FOLDER MONITOR                                                  ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+class FolderEventHandler(FileSystemEventHandler):
+    def __init__(self, callback):
+        self.callback = callback
+
+    def on_modified(self, event):
+        if not event.is_directory:
+            self.callback("write", event.src_path)
+
+    def on_created(self, event):
+        if not event.is_directory:
+            self.callback("write", event.src_path)
+
+    def on_deleted(self, event):
+        if not event.is_directory:
+            self.callback("delete", event.src_path)
+
+    def on_moved(self, event):
+        if not event.is_directory:
+            self.callback("move", event.src_path)
+
+
+class FolderMonitor:
+    def __init__(self):
+        self._observers: dict[str, Observer] = {}
+
+    def start_from_settings(self):
+        try:
+            settings = Settings.objects.get()
+            if settings.folder and os.path.isdir(settings.folder):
+                self.watch(settings.folder)
+                logger.info("👀 Auto-watching from settings: %s", settings.folder)
+            else:
+                logger.info("📁 No folder configured in settings, skipping.")
+        except Settings.DoesNotExist:
+            logger.warning("Settings not found, skipping folder monitor.")
+
+    def watch(self, folder_path: str, callback=None):
+        if folder_path in self._observers:
+            return
+
+        def _default_callback(event_type, file_path):
+            logger.info("📁 [%s] %s → %s", event_type.upper(), folder_path, file_path)
+            
+            alert=Alerts.objects.create(
+                pid=0,
+                process_name="FolderMonitor",
+                alert_level="warning",
+                resource="filesystem",
+                alert_message=f"[{event_type.upper()}] {file_path}",
+                resource_value=None,
+                threshold=None,
+                recommendations=[],
+            )
+
+            try:
+                show_alert_notification(alert)
+            except Exception as e:
+                logger.error("❌ Folder monitor notification failed: %s", e)
+
+
+        handler = FolderEventHandler(callback or _default_callback)
+        observer = Observer()
+        observer.schedule(handler, folder_path, recursive=True)
+        observer.start()
+        self._observers[folder_path] = observer
+        logger.info("👀 Watching folder: %s", folder_path)
+
+    def watched_folders(self) -> list[str]:
+        return list(self._observers.keys())
+
+    def stop_all(self):
+        for path in list(self._observers):
+            self.unwatch(path)
+
+_folder_monitor = FolderMonitor()
+
+class FolderMonitorView(APIView):
+    """
+    POST /api/terminator/folders/watch/   → {"path": "/some/folder"}
+    POST /api/terminator/folders/unwatch/ → {"path": "/some/folder"}
+    GET  /api/terminator/folders/         → list watched folders
+    """
+
+    def get(self, request):
+        return Response({"watched_folders": _folder_monitor.watched_folders()})
+
+    def post(self, request):
+        action = request.data.get("action")  # "watch" or "unwatch"
+        path = request.data.get("path")
+
+        if not path:
+            return Response({"error": "path is required"}, status=400)
+        if not os.path.isdir(path):
+            return Response({"error": f"'{path}' is not a valid directory"}, status=400)
+
+        if action == "watch":
+            _folder_monitor.watch(path)
+            return Response({"success": True, "watching": path})
+        elif action == "unwatch":
+            _folder_monitor.unwatch(path)
+            return Response({"success": True, "unwatched": path})
+        else:
+            return Response({"error": "action must be 'watch' or 'unwatch'"}, status=400)
 
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  EXAMPLE USAGE                                                   ║

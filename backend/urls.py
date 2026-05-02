@@ -13,6 +13,7 @@ from . import HistoryAPI
 
 from .TerminatorAI import TerminatorAnalysisView, TerminatorExecuteView
 
+from .TerminatorAI import FolderMonitorView 
 
 urlpatterns = [
     path('api/cpu-info/', global_cpu_info.as_view()),
@@ -34,5 +35,7 @@ urlpatterns = [
 
     path('api/terminator/analyze/', TerminatorAnalysisView.as_view()),
     path('api/terminator/execute/', TerminatorExecuteView.as_view()),
+
+    path("api/terminator/folders/", FolderMonitorView.as_view()),
 
 ]

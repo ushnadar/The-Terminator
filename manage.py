@@ -42,6 +42,9 @@ def main():
         if os.environ.get('RUN_MAIN') == 'true':
             t = threading.Thread(target=analyze_loop, daemon=True)
             t.start()
+        if os.environ.get('RUN_MAIN') == 'true':
+            from backend.TerminatorAI import _folder_monitor
+            _folder_monitor.start_from_settings()
 
     execute_from_command_line(sys.argv)
 
