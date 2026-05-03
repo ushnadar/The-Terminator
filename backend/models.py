@@ -59,7 +59,6 @@ class History(models.Model):
     pid = models.IntegerField()
     process_name = models.CharField(max_length=255, blank=True) 
     resource = models.CharField(max_length=50)
-    resource_value = models.FloatField(null=True, blank=True)  
     created_at = models.DateTimeField(auto_now_add=True)  
 
     class Meta:

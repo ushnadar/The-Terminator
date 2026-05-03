@@ -25,8 +25,10 @@ django.setup()
 from django.utils import timezone
 from rest_framework.decorators import APIView
 from rest_framework.response import Response
-from backend.models import Settings, Alerts
+from backend.models import Settings, Alerts,History
 from backend.Notifications import show_alert_notification
+
+
 
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
@@ -632,7 +634,6 @@ class TerminatorAnalysisView(APIView):
         except Exception as e:
             logger.error("Terminator analysis failed: %s", e, exc_info=True)
             return Response({"error": str(e)}, status=500)
-        
 class TerminatorExecuteView(APIView):
     """
     POST /api/terminator/execute/
@@ -668,11 +669,26 @@ class TerminatorExecuteView(APIView):
             graph = get_terminator_graph()
             exec_state = asyncio.run(graph.execution_agent.run(state))
 
+            actions_taken = exec_state["execution_result"].get("actions_taken", [])
+            errors = exec_state["execution_result"].get("errors", [])
+
+            # Log each action taken into History
+            history_entries = []
+            for action in actions_taken:
+                history_entries.append(History(
+                    pid=action.get("pid", 0),
+                    process_name=action.get("process_name", ""),
+                    resource=action.get("resource", selected_rec.get("resource", "unknown")),
+                ))
+
+            if history_entries:
+                History.objects.bulk_create(history_entries)
+
             return Response({
                 "success": True,
                 "executed_recommendation": selected_rec,
-                "actions_taken": exec_state["execution_result"].get("actions_taken", []),
-                "errors": exec_state["execution_result"].get("errors", []),
+                "actions_taken": actions_taken,
+                "errors": errors,
             })
 
         except Alerts.DoesNotExist:
@@ -680,7 +696,6 @@ class TerminatorExecuteView(APIView):
         except Exception as e:
             logger.error("Terminator execution failed: %s", e)
             return Response({"error": str(e)}, status=500)
-                
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler

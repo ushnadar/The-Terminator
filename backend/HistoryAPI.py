@@ -47,14 +47,13 @@ def get_history(request):
                 'pid': history.pid,
                 'process_name': history.process_name,
                 'resource': history.resource,
-                'resource_value': history.resource_value,
                 'created_at': history.created_at.isoformat(),
             })
         
         return JsonResponse({
             'success': True,
             'count': len(history_data),
-            'alerts': history_data
+            'history': history_data
         })
     
     except Exception as e:
