@@ -39,20 +39,25 @@ function Memory() {
     }
   };
 
+  const getMemBarWidth = (memMB) => {
+    if (!processData.length) return 0;
+    const max = parseFloat(processData[0].mem) || 1;
+    const val = parseFloat(memMB) || 0;
+    return Math.min((val / max) * 100, 100);
+  };
+
   return (
     <div>
       <h1>Memory Monitoring</h1>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* TOTAL RAM */}
       <div className="card">
         <h3>Total RAM</h3>
         <p>{memoryData ? memoryData.total + " GB" : "Loading..."}</p>
       </div>
 
-      {/* USED MEMORY */}
-      <div className="card">
+      <div className="card" style={{ marginTop: "16px" }}>
         <h3>Used Memory</h3>
         <p>
           {memoryData
@@ -61,36 +66,50 @@ function Memory() {
         </p>
       </div>
 
-      {/* AVAILABLE MEMORY */}
-      <div className="card">
+      <div className="card" style={{ marginTop: "16px" }}>
         <h3>Available Memory</h3>
         <p>{memoryData ? memoryData.available + " GB" : "Loading..."}</p>
       </div>
 
-      {/* PER PROCESS MEMORY */}
-      <div className="card">
-        <h3>Top Memory Consuming Processes</h3>
+      <div className="card" style={{ marginTop: "24px", padding: "30px" }}>
+        <h3 style={{ marginBottom: "24px" }}>Per Process Usage</h3>
+
         {processData.length > 0 ? (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="proc-table">
             <thead>
               <tr>
-                <th style={{ textAlign: "left", padding: "8px" }}>PID</th>
-                <th style={{ textAlign: "left", padding: "8px" }}>Process</th>
-                <th style={{ textAlign: "center", padding: "8px" }}>Memory (MB)</th>
+                <th>Process</th>
+                <th>PID</th>
+                <th>Memory</th>
               </tr>
             </thead>
             <tbody>
               {processData.map((proc) => (
-                <tr key={proc.pid} style={{ borderTop: "1px solid #ccc" }}>
-                  <td style={{ padding: "8px" }}>{proc.pid}</td>
-                  <td style={{ padding: "8px" }}>{proc.name}</td>
-                  <td style={{ textAlign: "center" }}>{proc.mem}</td>
+                <tr key={proc.pid}>
+                  <td>
+                    <span className="proc-dot proc-dot--running" />
+                    {proc.name}
+                  </td>
+                  <td>{proc.pid}</td>
+                  <td className="col-metric">
+                    <div className="proc-metric">
+                      <span className="proc-metric__value" style={{ minWidth: "72px" }}>
+                        {proc.mem} MB
+                      </span>
+                      <div className="proc-bar-track">
+                        <div
+                          className="proc-bar-fill"
+                          style={{ width: `${getMemBarWidth(proc.mem)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <p>Loading processes...</p>
+          <p style={{ color: "#888", letterSpacing: "2px" }}>Loading processes...</p>
         )}
       </div>
     </div>

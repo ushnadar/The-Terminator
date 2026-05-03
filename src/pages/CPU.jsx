@@ -12,7 +12,7 @@ function CPU() {
     const interval = setInterval(() => {
       fetchCPU();
       fetchProcesses();
-    }, 2000); // auto-refresh every 2 seconds
+    }, 2000);
 
     return () => clearInterval(interval);
   }, []);
@@ -39,42 +39,59 @@ function CPU() {
     }
   };
 
+  const getCpuBarWidth = (cpu) => {
+    const val = parseFloat(cpu);
+    return isNaN(val) ? 0 : Math.min(val, 100);
+  };
+
   return (
     <div>
       <h1>CPU Monitoring</h1>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* TOTAL CPU */}
       <div className="card">
         <h3>Total CPU Usage</h3>
         <p>{cpuData ? cpuData["total usage"] + "%" : "Loading..."}</p>
       </div>
 
-      {/* PER PROCESS */}
-      <div className="card">
-        <h3>Top Processes</h3>
+      <div className="card" style={{ marginTop: "24px", padding: "30px" }}>
+        <h3 style={{ marginBottom: "24px" }}>Per Process Usage</h3>
+
         {processData.length > 0 ? (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="proc-table">
             <thead>
               <tr>
-                <th style={{ textAlign: "left", padding: "8px" }}>PID</th>
-                <th style={{ textAlign: "left", padding: "8px" }}>Process</th>
-                <th style={{ textAlign: "center", padding: "8px" }}>CPU %</th>
+                <th>Process</th>
+                <th>PID</th>
+                <th>CPU %</th>
               </tr>
             </thead>
             <tbody>
               {processData.map((proc) => (
-                <tr key={proc.pid} style={{ borderTop: "1px solid #ccc" }}>
-                  <td style={{ padding: "8px" }}>{proc.pid}</td>
-                  <td style={{ padding: "8px" }}>{proc.name}</td>
-                  <td style={{ textAlign: "center" }}>{proc.cpu}</td>
+                <tr key={proc.pid}>
+                  <td>
+                    <span className="proc-dot proc-dot--running" />
+                    {proc.name}
+                  </td>
+                  <td>{proc.pid}</td>
+                  <td className="col-metric">
+                    <div className="proc-metric">
+                      <span className="proc-metric__value">{proc.cpu}%</span>
+                      <div className="proc-bar-track">
+                        <div
+                          className="proc-bar-fill"
+                          style={{ width: `${getCpuBarWidth(proc.cpu)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <p>Loading processes...</p>
+          <p style={{ color: "#888", letterSpacing: "2px" }}>Loading processes...</p>
         )}
       </div>
     </div>
