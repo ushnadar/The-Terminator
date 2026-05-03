@@ -69,12 +69,12 @@ def delete_history(request):
         if not history_id:
             return JsonResponse({'error': 'id parameter required'}, status=400)
         
-        history = History.objects.get(alert_id=history_id)
+        history = History.objects.get(history_id=history_id)
         history.delete()
         
         return JsonResponse({
             'success': True,
-            'message': 'Alert deleted'
+            'message': 'history deleted'
         })
     
     except History.DoesNotExist:

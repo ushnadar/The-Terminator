@@ -486,16 +486,16 @@ class ExecutionAgent(BaseAgent):
 
     def _safe_kill(self, pid: int, name: str) -> dict:
         if name.lower() in SYSTEM_BLOCKLIST:
-            return {"pid": pid, "name": name, "success": False, "reason": "protected system process"}
+            return {"pid": pid, "process_name": name, "success": False, "reason": "protected system process"}
 
         try:
             proc = psutil.Process(pid)
             if proc.name().lower() in SYSTEM_BLOCKLIST:
-                return {"pid": pid, "name": name, "success": False, "reason": "protected"}
+                return {"pid": pid, "process_name": name, "success": False, "reason": "protected"}
             
             if self.dry_run:
                 logger.info("[DRY RUN] Would kill %s (PID %s)", name, pid)
-                return {"pid": pid, "name": name, "success": True, "reason": "dry_run"}
+                return {"pid": pid, "process_name": name, "success": True, "reason": "dry_run"}
 
             proc.terminate()
             try:
@@ -503,9 +503,9 @@ class ExecutionAgent(BaseAgent):
             except psutil.TimeoutExpired:
                 proc.kill()
 
-            return {"pid": pid, "name": name, "success": True, "reason": "terminated"}
+            return {"pid": pid, "process_name": name, "success": True, "reason": "terminated"}
         except (psutil.NoSuchProcess, psutil.AccessDenied) as exc:
-            return {"pid": pid, "name": name, "success": False, "reason": str(exc)}
+            return {"pid": pid, "process_name": name, "success": False, "reason": str(exc)}
 
 
 # ╔══════════════════════════════════════════════════════════════════╗
@@ -699,7 +699,8 @@ class TerminatorExecuteView(APIView):
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-
+import threading
+import time
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  FOLDER MONITOR                                                  ║
 # ╚══════════════════════════════════════════════════════════════════╝
@@ -730,15 +731,37 @@ class FolderMonitor:
         self._observers: dict[str, Observer] = {}
 
     def start_from_settings(self):
-        try:
-            settings = Settings.objects.get()
-            if settings.folder and os.path.isdir(settings.folder):
-                self.watch(settings.folder)
-                logger.info("👀 Auto-watching from settings: %s", settings.folder)
-            else:
-                logger.info("📁 No folder configured in settings, skipping.")
-        except Settings.DoesNotExist:
-            logger.warning("Settings not found, skipping folder monitor.")
+        """Poll settings and start watching when a folder becomes available."""
+        def _poll():
+            watching = None
+            while True:
+                try:
+                    settings = Settings.objects.get()
+                    folder = settings.folder
+
+                    if folder and os.path.isdir(folder) and folder != watching:
+                        # New valid folder detected — start watching it
+                        if watching:
+                            self.unwatch(watching)  # stop watching old folder if it changed
+                        self.watch(folder)
+                        watching = folder
+                        logger.info("👀 Now watching: %s", folder)
+
+                    elif watching and (not folder or not os.path.isdir(folder)):
+                        # Folder was removed or cleared from settings
+                        self.unwatch(watching)
+                        watching = None
+                        logger.info("🛑 Stopped watching (folder removed from settings)")
+
+                except Settings.DoesNotExist:
+                    logger.warning("Settings not found, retrying...")
+                except Exception as e:
+                    logger.error("Folder poll error: %s", e)
+
+                time.sleep(10)  # check every 10 seconds
+
+        t = threading.Thread(target=_poll, daemon=True)
+        t.start()
 
     def watch(self, folder_path: str, callback=None):
         if folder_path in self._observers:
