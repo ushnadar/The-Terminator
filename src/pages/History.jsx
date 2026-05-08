@@ -19,14 +19,22 @@ function History() {
     fetchHistory();
   }, []);
 
-  const handleDelete = (id) => {
+  const handleDelete = (item) => {
+    // Try history_id first, fall back to id
+    const id = item.history_id || item.id;
+    if (!id) {
+      console.error("No valid ID found on history item:", item);
+      return;
+    }
+
     fetch(`http://127.0.0.1:8000/api/history/delete/?history_id=${id}`, {
       method: "DELETE",
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Delete failed");
-        fetchHistory();
+        if (!res.ok) throw new Error(`Delete failed with status ${res.status}`);
+        return res.json();
       })
+      .then(() => fetchHistory())
       .catch((err) => console.error("Delete error:", err));
   };
 
@@ -112,7 +120,7 @@ function History() {
                   : "—";
 
                 return (
-                  <tr key={index}>
+                  <tr key={item.history_id || item.id || index}>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span>{getResourceIcon(item.resource)}</span>
@@ -132,7 +140,7 @@ function History() {
                     <td style={{ color: "#555", fontSize: "12px", fontFamily: "monospace" }}>{time}</td>
                     <td style={{ textAlign: "right" }}>
                       <button
-                        onClick={() => handleDelete(item.id || item.history_id)}
+                        onClick={() => handleDelete(item)}
                         style={{
                           padding: "4px 12px",
                           borderRadius: "6px",

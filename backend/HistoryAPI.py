@@ -12,19 +12,17 @@ def get_history(request):
         
         n = int(request.GET.get('n', 10))  
         
-        resource = request.GET.get('resource', None)          #optional filters 
+        resource = request.GET.get('resource', None)
         pid = request.GET.get('pid', None)  
-        sort = request.GET.get('sort', 'latest')  # Sort order
+        sort = request.GET.get('sort', 'latest')
         
-        # Validate n
         if n < 1:
-            return JsonResponse({'invalid n error'}, status=500)
+            return JsonResponse({'error': 'invalid n'}, status=500)
             
         history_query = History.objects.all()
         
-        if resource: # filters
+        if resource:
             history_query = history_query.filter(resource=resource)
-        
         
         if pid:
             try:
@@ -37,13 +35,13 @@ def get_history(request):
             history_query = history_query.order_by('created_at')
         else: 
             history_query = history_query.order_by('-created_at')
-        
 
-        history_list = history_query[:n]         # Get N alerts
+        history_list = history_query[:n]
         
         history_data = []
         for history in history_list:
             history_data.append({
+                'history_id': history.pk,   # FIX 1: always send the PK so frontend can delete
                 'pid': history.pid,
                 'process_name': history.process_name,
                 'resource': history.resource,
@@ -61,7 +59,7 @@ def get_history(request):
 
 
 @csrf_exempt
-@require_http_methods(["DELETE"]) #optional alert urana ho to 
+@require_http_methods(["DELETE"])
 def delete_history(request):
     try:
         history_id = request.GET.get('history_id')
@@ -69,12 +67,12 @@ def delete_history(request):
         if not history_id:
             return JsonResponse({'error': 'id parameter required'}, status=400)
         
-        history = History.objects.get(alert_id=history_id)
+        history = History.objects.get(pk=history_id)   # FIX 2: use pk, not alert_id
         history.delete()
         
         return JsonResponse({
             'success': True,
-            'message': 'Alert deleted'
+            'message': 'History deleted'
         })
     
     except History.DoesNotExist:

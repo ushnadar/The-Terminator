@@ -36,14 +36,24 @@ function Alerts() {
     const selectedIndexes = selected[alert.alert_id] || [];
     if (selectedIndexes.length === 0) return;
     setExecutingId(alert.alert_id);
-    const approved = selectedIndexes.map((i) => alert.recommendations[i]);
-    fetch("http://127.0.0.1:8000/api/terminator/execute/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ approved_recommendations: approved }),
-    })
-      .then((res) => res.json())
-      .then(() => { fetchAlerts(); setSelected((prev) => ({ ...prev, [alert.alert_id]: [] })); })
+
+    // Execute each selected recommendation one at a time by index
+    const requests = selectedIndexes.map((index) =>
+      fetch("http://127.0.0.1:8000/api/terminator/execute/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alert_id: alert.alert_id,
+          recommendation_index: index,
+        }),
+      }).then((res) => res.json())
+    );
+
+    Promise.all(requests)
+      .then(() => {
+        fetchAlerts();
+        setSelected((prev) => ({ ...prev, [alert.alert_id]: [] }));
+      })
       .catch((err) => console.error(err))
       .finally(() => setExecutingId(null));
   };
@@ -104,7 +114,7 @@ function Alerts() {
                 borderColor: critical ? "#ff4d6d33" : "#ffffff0f",
               }}
             >
-              {/* left accent bar — only red for critical, subtle for warning */}
+              {/* left accent bar */}
               <div style={{
                 position: "absolute", left: 0, top: 0, bottom: 0, width: "3px",
                 backgroundColor: critical ? "#ff4d6d" : "#333",
