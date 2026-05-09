@@ -12,7 +12,7 @@ import sys
 from abc import ABC, abstractmethod
 from collections import deque
 from typing import TypedDict, Annotated, Sequence
-
+from langchain_groq import ChatGroq
 import django
 import psutil
 from asgiref.sync import sync_to_async
@@ -324,6 +324,9 @@ class AnalysisAgent(BaseAgent):
         return state
 
     async def _llm_analysis(self, metrics: dict, anomalies: list[dict], history: list[dict]) -> dict:
+        if not anomalies:
+         return self._rule_based_analysis(metrics, anomalies)
+       
         slim_history = [
             {
                 "cpu_pct": s.get("cpu", {}).get("percent"),
@@ -405,6 +408,8 @@ class RecommendationAgent(BaseAgent):
         return state
 
     async def _llm_recommendations(self, analysis: dict, metrics: dict) -> list[dict]:
+        if not analysis.get("root_causes"):
+         return self._rule_based_recommendations(analysis, metrics)
         prompt = f"ANALYSIS:\n{json.dumps(analysis, indent=2)}\n\nTOP PROCESSES:\n{json.dumps(metrics.get('cpu',{}).get('per_process',[])[:5])}"
         try:
             resp = await self.llm.ainvoke([
@@ -571,17 +576,32 @@ class TerminatorGraph:
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  DJANGO API ENDPOINTS                                            ║
 # ╚══════════════════════════════════════════════════════════════════╝
-
+def get_groq_llm():
+    """Return a Groq LLM, or None if the key is missing / import fails."""
+    api_key=os.getenv("api-key")
+    if not api_key:
+        logger.warning("GROQ_API_KEY not set — using rule-based fallback")
+        return None
+    try:
+        return ChatGroq(
+            model="llama-3.3-70b-versatile",  # fast + cheap
+            temperature=0,
+            api_key=os.getenv("api-key"),
+        )
+    except Exception as exc:
+        logger.warning("Groq init failed (%s) — using rule-based fallback", exc)
+        return None
 # Global graph instance
 _terminator_graph = None
 
+
+
 def get_terminator_graph(llm=None):
-    """Lazy-init the graph"""
     global _terminator_graph
     if _terminator_graph is None:
+        llm = llm or get_groq_llm()   # caller can still override
         _terminator_graph = TerminatorGraph(llm=llm, dry_run=False)
     return _terminator_graph
-
 
 class TerminatorAnalysisView(APIView):
     """
