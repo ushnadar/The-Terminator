@@ -6,7 +6,13 @@ import signal
 import time
 import threading
 import requests
+import django
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+django.setup()
+
+import backend.SettingsAPI as settings
 
 def analyze_loop():
     base_url = "http://127.0.0.1:8000"
@@ -14,16 +20,21 @@ def analyze_loop():
 
     print(f"Starting forever loop → {endpoint}")
 
+    Set= settings.get_or_create_settings()
+
+    delay = Set.analysis_delay
+
     while True:
+        print(f"waiting for {delay} seconds")
+        time.sleep(delay)  
         try:
             response = requests.post(endpoint, timeout=30)
             response.raise_for_status()
             print(f"[OK] {response.status_code} {response.text[:200]}")
-            time.sleep(5)
         except Exception as exc:
+           
             print(f"[ERROR] {exc}")
-            time.sleep(30)
-
+        
 
 def main():
     """Run administrative tasks."""

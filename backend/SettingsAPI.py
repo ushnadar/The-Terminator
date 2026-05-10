@@ -27,7 +27,8 @@ def get_settings(request):
             'network_enabled':settings.network_enabled,
             'network_threshold':settings.network_threshold,
             'folder-path':settings.folder,
-            "allow_notifications":settings.allow_notifications
+            "allow_notifications":settings.allow_notifications,
+            "analysis_delay": settings.analysis_delay
 
         })
     except Settings.DoesNotExist:
@@ -55,6 +56,8 @@ def update_settings(request):
         settings.folder= data.get('folder', settings.folder)
 
         settings.allow_notifications =data.get('allow_notifications',settings.allow_notifications)
+
+        settings.analysis_delay =data.get('analysis_delay',settings.analysis_delay)
 
         settings.full_clean()  #validation
         settings.save()

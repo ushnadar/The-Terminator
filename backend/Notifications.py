@@ -12,33 +12,6 @@ django.setup()
 from backend.models import Settings, Alerts
 from collections import defaultdict
 
-NOTIFICATION_COOLDOWN = 30  # endless spam nahi chahiye bhai
-
-class _CooldownTracker:
-    """Singleton so state survives across multiple instantiations."""
-    _instance = None
-    _lock = threading.Lock()
-
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._last_notified = defaultdict(float)
-        return cls._instance
-
-    def should_fire(self, resource: str) -> bool:
-        now = time.time()
-        with self._lock:
-            if now - self._last_notified[resource] < NOTIFICATION_COOLDOWN:
-                return False
-            self._last_notified[resource] = now
-            return True
-
-
-_cooldown_tracker = _CooldownTracker()
-
-
 class show_alert_notification:
     def __init__(self, alert: Alerts):
         self.alert = alert
@@ -47,9 +20,9 @@ class show_alert_notification:
         if not self._should_notify_for_resource(alert.resource):
             return
 
-        # Cooldown check — only updates state if we're actually going to notify
-        if not _cooldown_tracker.should_fire(alert.resource):
-            return
+        # # Cooldown check — only updates state if we're actually going to notify
+        # if not _cooldown_tracker.should_fire(alert.resource):
+        #     return
 
         alert_config = {
             'critical': {

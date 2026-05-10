@@ -25,6 +25,8 @@ class Settings(models.Model): #settings ka database to issi se ho jaye ga INCRED
 
     allow_notifications= models.BooleanField(default=False)
 
+    analysis_delay= models.IntegerField(validators=[MinValueValidator(0)],default=30)
+
     class Meta: #checks ON the db directly
         constraints = [models.CheckConstraint(condition=Q(cpu_enabled=False) | Q(cpu_threshold__isnull=False),name="cpu_threshold_required_if_enabled"),
                 models.CheckConstraint(condition=Q(memory_enabled=False) | Q(memory_threshold__isnull=False),name="memory_threshold_required_if_enabled"),
