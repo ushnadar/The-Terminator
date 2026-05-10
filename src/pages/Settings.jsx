@@ -1,5 +1,31 @@
 import { useState, useEffect } from "react";
 
+// Defined outside Settings so React doesn't treat it as a new component type on every render
+function ThresholdRow({ label, enabled, onToggle, value, setValue }) {
+  return (
+    <div className="input-group">
+      <div className="threshold-row">
+        <label className="threshold-label">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={onToggle}
+            className="threshold-checkbox"
+          />
+          {label}
+        </label>
+        <input
+          className="input-field"
+          type="number"
+          value={value}
+          disabled={!enabled}
+          onChange={(e) => setValue(e.target.value)}
+        />
+      </div>
+    </div>
+  );
+}
+
 function Settings() {
   const [username, setUsername] = useState("");
 
@@ -7,6 +33,7 @@ function Settings() {
   const [memory, setMemory] = useState("");
   const [disk, setDisk] = useState("");
   const [battery, setBattery] = useState("");
+  const [analysisDelay, setAnalysisDelay] = useState("");
 
   const [cpuEnabled, setCpuEnabled] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
@@ -15,9 +42,9 @@ function Settings() {
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  const [folderPath, setFolderPath] = useState("");   // what we send to backend
-  const [folderDisplay, setFolderDisplay] = useState(""); // what we show to user
-  const [savedFolder, setSavedFolder] = useState("");   // what is currently saved
+  const [folderPath, setFolderPath] = useState("");
+  const [folderDisplay, setFolderDisplay] = useState("");
+  const [savedFolder, setSavedFolder] = useState("");
 
   useEffect(() => {
     fetch("http://127.0.0.1:8000/api/settings/")
@@ -28,12 +55,12 @@ function Settings() {
         setMemory(data.memory_threshold ?? "");
         setDisk(data.disk_threshold ?? "");
         setBattery(data.battery_threshold ?? "");
+        setAnalysisDelay(data.analysis_delay ?? "");
         setCpuEnabled(data.cpu_enabled ?? false);
         setMemoryEnabled(data.memory_enabled ?? false);
         setDiskEnabled(data.disk_enabled ?? false);
         setBatteryEnabled(data.battery_enabled ?? false);
         setNotificationsEnabled(data.allow_notifications ?? false);
-        // API returns "folder-path" key
         const saved = data["folder-path"] || data.folder || "";
         setSavedFolder(saved);
         setFolderPath(saved);
@@ -48,40 +75,26 @@ function Settings() {
   const handleFolderSelect = (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    // webkitRelativePath = "FolderName/somefile.txt"
     const relativePath = files[0].webkitRelativePath || "";
     const folderName = relativePath.split("/")[0];
     setFolderDisplay(folderName);
-    setFolderPath(folderName);  // store the name; backend maps it from settings
-  };
-
-  const getRangeError = (value, min, max) => {
-    if (value === "" || value === null) return null;
-    const num = Number(value);
-    if (isNaN(num)) return null;
-    if (num < min || num > max) return `${min}–${max}% only`;
-    return null;
-  };
-
-  const clampForSave = (value, min, max) => {
-    const num = Number(value);
-    if (isNaN(num) || value === "") return min;
-    return Math.min(Math.max(num, min), max);
+    setFolderPath(folderName);
   };
 
   const handleSave = () => {
     const payload = {
       username,
       cpu_enabled: cpuEnabled,
-      cpu_threshold: clampForSave(cpu, 35, 100),
+      cpu_threshold: cpu === "" ? null : Number(cpu),
       memory_enabled: memoryEnabled,
-      memory_threshold: clampForSave(memory, 35, 100),
+      memory_threshold: memory === "" ? null : Number(memory),
       disk_enabled: diskEnabled,
-      disk_threshold: clampForSave(disk, 35, 100),
+      disk_threshold: disk === "" ? null : Number(disk),
       battery_enabled: batteryEnabled,
-      battery_threshold: clampForSave(battery, 1, 100),
+      battery_threshold: battery === "" ? null : Number(battery),
       allow_notifications: notificationsEnabled,
-      folder: folderPath,   // just save the folder name to the DB
+      folder: folderPath,
+      analysis_delay: analysisDelay === "" ? null : Number(analysisDelay),
     };
 
     fetch("http://127.0.0.1:8000/api/settings/update/", {
@@ -95,45 +108,13 @@ function Settings() {
           setSavedFolder(folderPath);
           alert(data.message || "Settings saved!");
         } else {
-          alert("Error: " + (data.error || "Could not save settings"));
+          alert("Error: " + (data.error || "Could not save settings."));
         }
       })
-      .catch((err) => console.error("Error saving settings:", err));
-  };
-
-  const ThresholdRow = ({ label, enabled, onToggle, value, setValue, min, max }) => {
-    const error = enabled ? getRangeError(value, min, max) : null;
-    return (
-      <div className="input-group">
-        <div className="threshold-row">
-          <label className="threshold-label">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={onToggle}
-              className="threshold-checkbox"
-            />
-            {label}
-          </label>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <input
-              className={`input-field${error ? " input-field--error" : ""}`}
-              type="number"
-              value={value}
-              disabled={!enabled}
-              min={min}
-              max={max}
-              onChange={(e) => setValue(e.target.value)}
-            />
-            {error && (
-              <span className="threshold-error-badge">
-                ⚠ {error}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+      .catch((err) => {
+        console.error("Error saving settings:", err);
+        alert("Network error: could not reach the server.");
+      });
   };
 
   return (
@@ -215,10 +196,29 @@ function Settings() {
         <p style={{ color: "#555", fontSize: "11px", letterSpacing: "2px", marginBottom: "20px" }}>
           ENABLE A RESOURCE AND SET ITS ALERT THRESHOLD (%)
         </p>
-        <ThresholdRow label="CPU"     enabled={cpuEnabled}     onToggle={() => setCpuEnabled(!cpuEnabled)}         value={cpu}     setValue={setCpu}     min={35} max={100} />
-        <ThresholdRow label="Memory"  enabled={memoryEnabled}  onToggle={() => setMemoryEnabled(!memoryEnabled)}   value={memory}  setValue={setMemory}  min={35} max={100} />
-        <ThresholdRow label="Disk"    enabled={diskEnabled}    onToggle={() => setDiskEnabled(!diskEnabled)}       value={disk}    setValue={setDisk}    min={35} max={100} />
-        <ThresholdRow label="Battery" enabled={batteryEnabled} onToggle={() => setBatteryEnabled(!batteryEnabled)} value={battery} setValue={setBattery} min={1}  max={100} />
+        <ThresholdRow label="CPU"     enabled={cpuEnabled}     onToggle={() => setCpuEnabled(!cpuEnabled)}         value={cpu}     setValue={setCpu}     />
+        <ThresholdRow label="Memory"  enabled={memoryEnabled}  onToggle={() => setMemoryEnabled(!memoryEnabled)}   value={memory}  setValue={setMemory}  />
+        <ThresholdRow label="Disk"    enabled={diskEnabled}    onToggle={() => setDiskEnabled(!diskEnabled)}       value={disk}    setValue={setDisk}    />
+        <ThresholdRow label="Battery" enabled={batteryEnabled} onToggle={() => setBatteryEnabled(!batteryEnabled)} value={battery} setValue={setBattery} />
+      </div>
+
+      {/* Analysis Delay */}
+      <div className="card" style={{ marginTop: "16px" }}>
+        <h3>Analysis Delay</h3>
+        <p style={{ color: "#555", fontSize: "11px", letterSpacing: "2px", marginBottom: "20px" }}>
+          INTERVAL BETWEEN SYSTEM ANALYSES (SECONDS)
+        </p>
+        <div className="input-group">
+          <div className="threshold-row">
+            <label className="threshold-label">Delay</label>
+            <input
+              className="input-field"
+              type="number"
+              value={analysisDelay}
+              onChange={(e) => setAnalysisDelay(e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
       <button className="save-btn" onClick={handleSave} style={{ marginTop: "24px" }}>

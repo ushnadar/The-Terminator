@@ -46,3 +46,8 @@ core/__pycache__/urls.cpython-313.pyc
 core/__pycache__/settings.cpython-313.pyc
 core/__pycache__/__init__.cpython-313.pyc
 db.sqlite3
+db.sqlite3
+core/__pycache__/wsgi.cpython-313.pyc
+core/__pycache__/urls.cpython-313.pyc
+core/__pycache__/settings.cpython-313.pyc
+core/__pycache__/__init__.cpython-313.pyc
