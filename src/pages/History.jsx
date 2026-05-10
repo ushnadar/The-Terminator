@@ -57,7 +57,7 @@ function History() {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
-        <h1 style={{ margin: 0 }}>Alert History</h1>
+        <h1 style={{ margin: 0 }}>Executions History</h1>
         <span style={{ fontSize: "12px", color: "#555", letterSpacing: "2px" }}>
           {filtered.length} RECORD{filtered.length !== 1 ? "S" : ""}
         </span>

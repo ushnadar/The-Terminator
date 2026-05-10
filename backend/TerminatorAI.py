@@ -673,9 +673,13 @@ class TerminatorExecuteView(APIView):
             alert = Alerts.objects.get(alert_id=alert_id)
             recommendations = alert.recommendations
 
+            if rec_index not in alert.executed_recommendations:
+                alert.executed_recommendations.append(rec_index)
+                alert.save(update_fields=["executed_recommendations"])
+
             if rec_index >= len(recommendations) or rec_index < 0:
                 return Response({"error": f"Invalid index, alert has {len(recommendations)} recommendations"}, status=400)
-
+            
             selected_rec = recommendations[rec_index]
 
             state = {
@@ -813,6 +817,13 @@ class FolderMonitor:
         observer.start()
         self._observers[folder_path] = observer
         logger.info("👀 Watching folder: %s", folder_path)
+
+    def unwatch(self, folder_path: str):
+        observer = self._observers.pop(folder_path, None)
+        if observer:
+            observer.stop()
+            observer.join()
+            logger.info("🛑 Stopped watching: %s", folder_path)
 
     def watched_folders(self) -> list[str]:
         return list(self._observers.keys())

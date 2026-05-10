@@ -73,12 +73,29 @@ function Settings() {
   }, []);
 
   const handleFolderSelect = (e) => {
+    // Try files first (non-empty folders); fall back to the input value for empty folders
     const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const relativePath = files[0].webkitRelativePath || "";
-    const folderName = relativePath.split("/")[0];
-    setFolderDisplay(folderName);
-    setFolderPath(folderName);
+    if (files && files.length > 0) {
+      const relativePath = files[0].webkitRelativePath || "";
+      const folderName = relativePath.split("/")[0];
+      setFolderDisplay(folderName);
+      setFolderPath(folderName);
+    } else {
+      // Empty folder: browser sets input.value to something like "C:\fakepath\FolderName"
+      const raw = e.target.value || "";
+      const folderName = raw.replace(/\\/g, "/").split("/").filter(Boolean).pop() || "";
+      if (folderName) {
+        setFolderDisplay(folderName);
+        setFolderPath(folderName);
+      }
+    }
+    // Reset the input so the same folder can be re-selected if needed
+    e.target.value = "";
+  };
+
+  const handleClearFolder = () => {
+    setFolderDisplay("");
+    setFolderPath("");
   };
 
   const handleSave = () => {
@@ -172,19 +189,43 @@ function Settings() {
         </label>
 
         {folderDisplay ? (
-          <p style={{ marginTop: "12px", fontSize: "13px", color: "#888" }}>
-            Selected:{" "}
-            <span style={{ color: "#ff4d6d", letterSpacing: "1px" }}>{folderDisplay}</span>
-            {savedFolder === folderPath && (
-              <span style={{ marginLeft: "8px", color: "#4cff91", fontSize: "11px" }}>✓ saved</span>
-            )}
-          </p>
+          <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "#888" }}>
+              Selected:{" "}
+              <span style={{ color: "#ff4d6d", letterSpacing: "1px" }}>{folderDisplay}</span>
+              {savedFolder === folderPath && (
+                <span style={{ marginLeft: "8px", color: "#4cff91", fontSize: "11px" }}>✓ saved</span>
+              )}
+            </p>
+            <button
+              onClick={handleClearFolder}
+              style={{
+                background: "none", border: "1px solid #333", borderRadius: "4px",
+                color: "#555", fontSize: "11px", cursor: "pointer", padding: "2px 8px",
+                letterSpacing: "1px",
+              }}
+            >
+              CLEAR
+            </button>
+          </div>
         ) : savedFolder ? (
-          <p style={{ marginTop: "12px", fontSize: "13px", color: "#888" }}>
-            Monitoring:{" "}
-            <span style={{ color: "#ff4d6d", letterSpacing: "1px" }}>{savedFolder}</span>
-            <span style={{ marginLeft: "8px", color: "#4cff91", fontSize: "11px" }}>✓ active</span>
-          </p>
+          <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "#888" }}>
+              Monitoring:{" "}
+              <span style={{ color: "#ff4d6d", letterSpacing: "1px" }}>{savedFolder}</span>
+              <span style={{ marginLeft: "8px", color: "#4cff91", fontSize: "11px" }}>✓ active</span>
+            </p>
+            <button
+              onClick={handleClearFolder}
+              style={{
+                background: "none", border: "1px solid #333", borderRadius: "4px",
+                color: "#555", fontSize: "11px", cursor: "pointer", padding: "2px 8px",
+                letterSpacing: "1px",
+              }}
+            >
+              CLEAR
+            </button>
+          </div>
         ) : (
           <p style={{ marginTop: "12px", fontSize: "12px", color: "#444" }}>No folder selected</p>
         )}

@@ -50,7 +50,8 @@ class Alerts(models.Model):
     is_acknowledged = models.BooleanField(default=False)  # ye baad mei true ho jaye ga if the user handles this
 
     recommendations=  recommendations = models.JSONField(default=list, blank=True)
-    
+    executed_recommendations = models.JSONField(default=list) # persistence chahiye 
+
     class Meta:
         ordering = ['-created_at']  # ordering
         indexes = [models.Index(fields=['-created_at']),models.Index(fields=['pid']),models.Index(fields=['resource']),]
