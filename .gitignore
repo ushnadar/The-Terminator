@@ -32,7 +32,6 @@ backend/migrations/__pycache__/0004_alerts_recommendations.cpython-313.pyc
 backend/migrations/__pycache__/0003_remove_alerts_id_alerts_alert_id_and_more.cpython-313.pyc
 backend/migrations/__pycache__/0002_alerts.cpython-313.pyc
 backend/migrations/__pycache__/0001_initial.cpython-313.pyc
-backend/migrations/0009_settings_analysis_delay.py
 backend/__pycache__/urls.cpython-313.pyc
 backend/__pycache__/TerminatorAI.cpython-313.pyc
 backend/__pycache__/SettingsAPI.cpython-313.pyc
