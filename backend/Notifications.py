@@ -60,7 +60,9 @@ class show_alert_notification:
 
         toast.add_actions(
             label="View All Alerts",
-            launch="http://localhost:5173/alerts"
+            # launch="http://localhost:5173/alerts"
+            launch="terminator://alerts"
+            
         )
 
         toast.show()

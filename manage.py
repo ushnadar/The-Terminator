@@ -18,7 +18,7 @@ def analyze_loop():
     base_url = "http://127.0.0.1:8000"
     endpoint = f"{base_url}/api/terminator/analyze/"
 
-    print(f"Starting forever loop → {endpoint}")
+    print(f"Starting forever loop {endpoint}")
 
     Set= settings.get_or_create_settings()
 
@@ -50,10 +50,10 @@ def main():
         ) from exc
 
     if len(sys.argv) > 1 and sys.argv[1] == 'runserver':
-        if os.environ.get('RUN_MAIN') == 'true':
+        # if os.environ.get('RUN_MAIN') == 'true':
             t = threading.Thread(target=analyze_loop, daemon=True)
             t.start()
-        if os.environ.get('RUN_MAIN') == 'true':
+        # if os.environ.get('RUN_MAIN') == 'true':
             from backend.TerminatorAI import _folder_monitor
             _folder_monitor.start_from_settings()
 

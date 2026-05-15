@@ -6,17 +6,22 @@
   "main": "main.cjs",
   "scripts": {
     "dev": "vite",
-  "build": "vite build",
-  "lint": "eslint .",
-  "preview": "vite preview",
-  "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron . --dev\"",
-  "electron:build": "vite build && electron-builder"
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron . --dev\"",
+    "electron:build": "vite build && electron-builder"
   },
   "build": {
     "appId": "com.theterminator.app",
     "productName": "The Terminator",
-    "files": ["dist/**/*", "main.cjs"],
-    "directories": { "output": "release" }
+    "files": [
+      "dist/**/*",
+      "main.cjs"
+    ],
+    "directories": {
+      "output": "release"
+    }
   },
   "dependencies": {
     "react": "^19.2.0",
